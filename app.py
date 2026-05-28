@@ -1,5 +1,6 @@
 import cv2
 import streamlit as st
+import re
 
 from llm_engine import call_typhoon_llm
 from ocr_engine import (
@@ -22,7 +23,7 @@ st.markdown("""
         display: none !important;
     }
 
-    /* 🔴 สั่งซ่อนส่วนประกอบภายในของ stFileUploader ทุกชิ้นอย่างเด็ดขาด (ทั้งก่อนและหลังอัปโหลด) */
+    /* สั่งซ่อนส่วนประกอบภายในของ stFileUploader ทุกชิ้นอย่างเด็ดขาด (ทั้งก่อนและหลังอัปโหลด) */
     [data-testid="stFileUploaderDropzoneInputButton"],
     [data-testid="stFileUploaderFileSize"],
     [data-testid="stFileUploaderFileName"],
@@ -189,10 +190,19 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# ระบบสลับหน้าการทำงาน (State Management)
-if st.session_state.get("file_uploaded") is None:
 
-    # 📌 หน้าแรก: คลีน มินิมอล ไร้ปุ่มส่วนเกินแน่นอน
+# ฟังก์ชันสำหรับล้างค่าเพื่อกลับหน้าแรกเริ่มใหม่
+def reset_app():
+    st.session_state.clear()
+
+
+# ระบบสลับหน้าการทำงานด้วยหน่วยความจำชั่วคราว (Session State)
+if "processed_img" not in st.session_state or st.session_state.get("file_uploaded") is None:
+    # เคลียร์หน่วยความจำเก่าถ้ากลับมาหน้าแรกเริ่ม
+    if "processed_img" in st.session_state:
+        st.session_state.clear()
+
+    # 📌 หน้าแรก: เลือกอัปโหลดไฟล์
     st.markdown("<div class='hero-title'>Receipt scanning and data collection tools</div>", unsafe_allow_html=True)
     st.markdown("<div class='hero-subtitle'>Upload an image or PDF of your receipt to store it using OCR</div>",
                 unsafe_allow_html=True)
@@ -208,141 +218,142 @@ if st.session_state.get("file_uploaded") is None:
 
     if uploaded_file is not None:
         st.session_state["file_uploaded"] = uploaded_file
-        st.rerun()
+        file_bytes = uploaded_file.read()
+        file_name = uploaded_file.name
+
+        # 🛡️ รัน Preprocessing และเซฟเก็บเข้า State เพียงรอบเดียว ป้องกันปัญหา cv2.error
+        with st.spinner("⏳ กระบวนการขั้นที่ 1: กำลังปรับความสมบูรณ์ภาพเอกสาร..."):
+            img = load_image_or_pdf(file_bytes, file_name)
+            if img is None:
+                st.error("❌ ไฟล์เอกสารเกิดความเสียหายหรือไม่รองรับฟอร์แมตภาพนี้")
+                st.stop()
+            deskewed_img = deskew_image(img)
+            st.session_state["processed_img"] = process_method_4_sharpening(deskewed_img)
+
+        with st.spinner("⚡ กระบวนการขั้นที่ 2: ดำเนินการยิงดึงสายอักขระผ่าน Typhoon OCR..."):
+            raw_text = run_typhoon_ocr(st.session_state["processed_img"])
+            st.session_state["raw_text"] = raw_text
+
+        if "[ERROR]" in raw_text or not raw_text.strip():
+            st.error("❌ ระบบไม่สามารถอ่านคำออกจากใบเสร็จใบนี้ได้")
+            st.session_state.clear()
+        else:
+            with st.spinner("🤖 กระบวนการขั้นที่ 3: กำลังเรียบเรียงโครงสร้างโครงข่ายด้วย Typhoon LLM..."):
+                st.session_state["extracted_json"] = call_typhoon_llm(raw_text)
+            st.rerun()
 
 else:
-    # 📌 หน้าสอง: แสดงผลแบบฟอร์มและการประมวลผลข้อมูลดิจิทัล
-    uploaded_file = st.session_state["file_uploaded"]
-    file_bytes = uploaded_file.read()
-    file_name = uploaded_file.name
+    # 📌 หน้าสอง: ดึงค่าคงที่จากความจำมารันแสดงผลลัพธ์ข้อมูลดิจิทัล (ไม่รันโหลดรูปภาพซ้ำซ้อน)
+    processed_img = st.session_state["processed_img"]
+    raw_text = st.session_state["raw_text"]
+    extracted_json = st.session_state["extracted_json"]
 
-    with st.spinner("⏳ กระบวนการขั้นที่ 1: กำลังปรับความสมบูรณ์ภาพเอกสาร..."):
-        img = load_image_or_pdf(file_bytes, file_name)
-        if img is None:
-            st.error("❌ ไฟล์เอกสารเกิดความเสียหาย")
-            st.button("⇜", on_click=lambda: st.session_state.clear())
-            st.stop()
-        deskewed_img = deskew_image(img)
-        processed_img = process_method_4_sharpening(deskewed_img)
+    # ปุ่มกดย้อนกลับรูปแบบวงกลมสีชมพูตามระนาบดีไซน์ (Back Arrow Button)
+    st.button("⇜", key="back_to_upload", on_click=reset_app)
 
-    with st.spinner("⚡ กระบวนการขั้นที่ 2: ดำเนินการยิงดึงสายอักขระผ่าน Typhoon OCR..."):
-        raw_text = run_typhoon_ocr(processed_img)
+    col_left, col_right = st.columns([1, 1.1])
 
-    if "[ERROR]" in raw_text or not raw_text.strip():
-        st.error("❌ ระบบไม่สามารถอ่านคำออกจากใบเสร็จใบนี้ได้")
-        if st.button("⇜"):
-            st.session_state.clear()
-            st.rerun()
-    else:
-        with st.spinner("🤖 กระบวนการขั้นที่ 3: กำลังเรียบเรียงโครงสร้างโครงข่ายด้วย Typhoon LLM..."):
-            extracted_json = call_typhoon_llm(raw_text)
+    with col_left:
+        st.markdown(
+            "<h4 style='color: #4A2E35; font-weight: bold; margin-bottom:15px;'>🖼️ ไฟล์เอกสารใบเสร็จอ้างอิง</h4>",
+            unsafe_allow_html=True)
+        if len(processed_img.shape) == 2:
+            display_img = cv2.cvtColor(processed_img, cv2.COLOR_GRAY2RGB)
+        else:
+            display_img = cv2.cvtColor(processed_img, cv2.COLOR_BGR2RGB)
+        st.image(display_img, use_container_width=True)
 
-        if st.button("⇜", key="back_to_upload"):
-            st.session_state.clear()
-            st.rerun()
+        with st.expander("📄 เปิดรีวิวข้อความดิบ (Raw OCR Texts)"):
+            st.code(raw_text, language="text")
 
-        col_left, col_right = st.columns([1, 1.1])
+    with col_right:
+        st.markdown('<div class="receipt-card">', unsafe_allow_html=True)
+        st.markdown(
+            "<h4 style='color: #4A2E35; font-weight: bold; text-align: center; margin-bottom: 25px;'>รายละเอียดใบเสร็จ</h4>",
+            unsafe_allow_html=True)
 
-        with col_left:
-            if len(processed_img.shape) == 2:
-                display_img = cv2.cvtColor(processed_img, cv2.COLOR_GRAY2RGB)
-            else:
-                display_img = cv2.cvtColor(processed_img, cv2.COLOR_BGR2RGB)
-            st.image(display_img, use_container_width=True)
+        if "error" in extracted_json:
+            st.error(extracted_json["error"])
+        else:
+            with st.form("verified_receipt_form"):
+                merchant = st.text_input("🏪 ร้านค้า / ผู้ขาย", value=extracted_json.get("store_name", ""))
+                tax_id = st.text_input("🆔 เลขประจำตัวผู้เสียภาษี (Tax ID)", value=extracted_json.get("tax_id", ""))
+                receipt_no = st.text_input("🧾 เลขที่ใบเสร็จ", value=extracted_json.get("receipt_no", ""))
+                date_val = st.text_input("📅 วันที่ (YYYY-MM-DD)", value=extracted_json.get("date", ""))
 
-            with st.expander("📄 เปิดรีวิวข้อความดิบ (Raw OCR Texts)"):
-                st.code(raw_text, language="text")
+                st.write("<p style='font-weight:bold; margin-top:20px; color:#4A2E35;'>📦 รายการสินค้า</p>",
+                         unsafe_allow_html=True)
+                items_list = extracted_json.get("items", []) or []
+                edited_items = []
 
-        with col_right:
-            st.markdown('<div class="receipt-card">', unsafe_allow_html=True)
-            st.markdown(
-                "<h4 style='color: #4A2E35; font-weight: bold; text-align: center; margin-bottom: 25px;'>รายละเอียดใบเสร็จ</h4>",
-                unsafe_allow_html=True)
+                for idx, item in enumerate(items_list):
+                    c1, c2, c3 = st.columns([5, 2, 3])
+                    with c1:
+                        i_name = st.text_input(f"รายการ #{idx + 1}", value=item.get("name", ""), key=f"n_{idx}")
 
-            if "error" in extracted_json:
-                st.error(extracted_json["error"])
-            else:
-                with st.form("verified_receipt_form"):
-                    merchant = st.text_input("🏪 ร้านค้า / ผู้ขาย", value=extracted_json.get("store_name", ""))
-                    tax_id = st.text_input("🆔 เลขประจำตัวผู้เสียภาษี (Tax ID)", value=extracted_json.get("tax_id", ""))
-                    receipt_no = st.text_input("🧾 เลขที่ใบเสร็จ", value=extracted_json.get("receipt_no", ""))
-                    date_val = st.text_input("📅 วันที่ (YYYY-MM-DD)", value=extracted_json.get("date", ""))
-
-                    st.write("<p style='font-weight:bold; margin-top:20px; color:#4A2E35;'>📦 รายการสินค้า</p>",
-                             unsafe_allow_html=True)
-                    items_list = extracted_json.get("items", []) or []
-                    edited_items = []
-
-                    for idx, item in enumerate(items_list):
-                        c1, c2, c3 = st.columns([5, 2, 3])
-                        with c1:
-                            i_name = st.text_input(f"รายการ #{idx + 1}", value=item.get("name", ""), key=f"n_{idx}")
-
-                        import re
-
-                        raw_qty = item.get("qty", 1)
-                        if isinstance(raw_qty, str): raw_qty = re.sub(r"[^\d.]", "", raw_qty)
-                        try:
-                            default_qty = int(float(raw_qty)) if raw_qty else 1
-                        except:
-                            default_qty = 1
-                        with c2:
-                            i_qty = st.number_input("จำนวน", value=default_qty, step=1, key=f"q_{idx}")
-
-                        raw_price = item.get("unit_price", 0.0)
-                        if isinstance(raw_price, str): raw_price = raw_price.replace(",", "")
-                        try:
-                            default_price = float(raw_price) if raw_price else 0.0
-                        except:
-                            default_price = 0.0
-                        with c3:
-                            i_price = st.number_input("ราคา", value=default_price, step=0.5, key=f"p_{idx}")
-
-                        edited_items.append(
-                            {"name": i_name, "qty": i_qty, "unit_price": i_price, "amount": i_qty * i_price})
-
-                    st.write("---")
-
-                    raw_subtotal = extracted_json.get("subtotal", 0.0)
-                    if isinstance(raw_subtotal, str): raw_subtotal = raw_subtotal.replace(",", "")
+                    raw_qty = item.get("qty", 1)
+                    if isinstance(raw_qty, str): raw_qty = re.sub(r"[^\d.]", "", raw_qty)
                     try:
-                        default_subtotal = float(raw_subtotal) if raw_subtotal else 0.0
+                        default_qty = int(float(raw_qty)) if raw_qty else 1
                     except:
-                        default_subtotal = 0.0
-                    subtotal = st.number_input("ยอดรวมก่อนคิดภาษี (Subtotal)", value=default_subtotal, step=0.5)
+                        default_qty = 1
+                    with c2:
+                        i_qty = st.number_input("จำนวน", value=default_qty, step=1, key=f"q_{idx}")
 
-                    raw_vat = extracted_json.get("vat", 0.0)
-                    if isinstance(raw_vat, str): raw_vat = raw_vat.replace(",", "")
+                    raw_price = item.get("unit_price", 0.0)
+                    if isinstance(raw_price, str): raw_price = raw_price.replace(",", "")
                     try:
-                        default_vat = float(raw_vat) if raw_vat else 0.0
+                        default_price = float(raw_price) if raw_price else 0.0
                     except:
-                        default_vat = 0.0
-                    vat = st.number_input("VAT 7% :", value=default_vat, step=0.1)
+                        default_price = 0.0
+                    with c3:
+                        i_price = st.number_input("ราคา", value=default_price, step=0.5, key=f"p_{idx}")
 
-                    raw_total = extracted_json.get("total", 0.0)
-                    if isinstance(raw_total, str): raw_total = raw_total.replace(",", "")
-                    try:
-                        default_total = float(raw_total) if raw_total else 0.0
-                    except:
-                        default_total = 0.0
-                    total = st.number_input("ยอดรวม :", value=default_total, step=0.5)
+                    edited_items.append(
+                        {"name": i_name, "qty": i_qty, "unit_price": i_price, "amount": i_qty * i_price})
 
-                    pay_method = st.text_input("💳 ช่องทางการจ่ายชำระเงิน (Payment Method)",
-                                               value=extracted_json.get("payment_method", ""))
+                st.write("---")
 
-                    save_btn = st.form_submit_button("📤 ส่งออก")
+                raw_subtotal = extracted_json.get("subtotal", 0.0)
+                if isinstance(raw_subtotal, str): raw_subtotal = raw_subtotal.replace(",", "")
+                try:
+                    default_subtotal = float(raw_subtotal) if raw_subtotal else 0.0
+                except:
+                    default_subtotal = 0.0
+                subtotal = st.number_input("ยอดรวมก่อนคิดภาษี (Subtotal)", value=default_subtotal, step=0.5)
 
-                if save_btn:
-                    st.success("🎉 บันทึกดิจิทัลไฟล์เสร็จสิ้นเรียบร้อย!")
-                    st.json({
-                        "store_name": merchant,
-                        "tax_id": tax_id,
-                        "receipt_no": receipt_no,
-                        "date": date_val,
-                        "items": edited_items,
-                        "subtotal": subtotal,
-                        "vat": vat,
-                        "total": total,
-                        "payment_method": pay_method
-                    })
-            st.markdown('</div>', unsafe_allow_html=True)
+                raw_vat = extracted_json.get("vat", 0.0)
+                if isinstance(raw_vat, str): raw_vat = raw_vat.replace(",", "")
+                try:
+                    default_vat = float(raw_vat) if raw_vat else 0.0
+                except:
+                    default_vat = 0.0
+                vat = st.number_input("VAT 7% :", value=default_vat, step=0.1)
+
+                raw_total = extracted_json.get("total", 0.0)
+                if isinstance(raw_total, str): raw_total = raw_total.replace(",", "")
+                try:
+                    default_total = float(raw_total) if raw_total else 0.0
+                except:
+                    default_total = 0.0
+                total = st.number_input("ยอดรวม :", value=default_total, step=0.5)
+
+                pay_method = st.text_input("💳 ช่องทางการจ่ายชำระเงิน (Payment Method)",
+                                           value=extracted_json.get("payment_method", ""))
+
+                save_btn = st.form_submit_button("📤 ส่งออก")
+
+            if save_btn:
+                st.success("🎉 บันทึกดิจิทัลไฟล์เสร็จสิ้นเรียบร้อย!")
+                st.json({
+                    "store_name": merchant,
+                    "tax_id": tax_id,
+                    "receipt_no": receipt_no,
+                    "date": date_val,
+                    "items": edited_items,
+                    "subtotal": subtotal,
+                    "vat": vat,
+                    "total": total,
+                    "payment_method": pay_method
+                })
+        st.markdown('</div>', unsafe_allow_html=True)
