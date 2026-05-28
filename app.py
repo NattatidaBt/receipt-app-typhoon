@@ -1,6 +1,6 @@
 import cv2
 import streamlit as st
-import streamlit.components.v1 as components
+import streamlit.components.v1 as components  # 🔴 ย้ายมาล็อกไว้บรรทัดบนสุดตรงนี้ เพื่อเคลียร์ Unresolved reference ทันที!
 
 # =========================================================
 # PAGE CONFIG
@@ -115,26 +115,6 @@ button[title="View fullscreen"] {display:none !important;}
 """, unsafe_allow_html=True)
 
 # =========================================================
-# HEADER COMPONENT (คงสไตล์ดั้งเดิม 100%)
-# =========================================================
-st.markdown("""
-<div class="header-bar">
-  <div class="logo-text">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-         stroke="#C97D98" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-      <line x1="16" y1="13" x2="8" y2="13"/>
-      <line x1="16" y1="17" x2="8" y2="17"/>
-      <polyline points="10 9 9 9 8 9"/>
-    </svg>
-    RecAipt
-  </div>
-  <div class="lang-pill">English ▾</div>
-</div>
-""", unsafe_allow_html=True)
-
-# =========================================================
 # HELPERS
 # =========================================================
 def reset_app():
@@ -150,7 +130,7 @@ def safe_int(value, default=1):
     except Exception: return default
 
 # =========================================================
-# HTML BUILDERS & SVG ICONS (ปรับให้ปุ่มส่งคำสั่งข้ามหน้าต่างจำลองได้จริง)
+# HTML BUILDERS & SVG ICONS (คงเดิมตามระบบของคุณ 100%)
 # =========================================================
 SVG_BACK   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>'
 SVG_EDIT   = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
@@ -185,7 +165,6 @@ def build_detail_card_html(extracted_json):
     subtotal_row = f'<div class="t-row"><span>ยอดก่อน VAT :</span><span>{subtotal_val:,.2f} บาท</span></div>' if subtotal_val else ""
     vat_row      = f'<div class="t-row"><span>VAT 7% :</span><span>{vat_val:,.2f} บาท</span></div>' if vat_val else ""
 
-    # 🔴 ดัดแปลงปุ่มส่วนหัวให้ออกคำสั่งผ่านแท็กสมอเรือดั้งเดิม <a> พ่วงเป้าหมาย target="_parent"
     return f"""<!DOCTYPE html><html><head><meta charset="utf-8">
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
@@ -250,7 +229,6 @@ a{{text-decoration:none!important}}
 </body></html>"""
 
 def build_action_bar_html():
-    # 🔴 ปรับแถบเครื่องมือล่างให้เป็นลิงก์ส่งคำสั่งข้ามกรอบได้เช่นเดียวกัน
     return f"""<!DOCTYPE html><html><head><meta charset="utf-8">
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
@@ -272,7 +250,6 @@ a{{text-decoration:none!important}}
 </body></html>"""
 
 def build_img_controls_html():
-    # 🔴 ปรับปุ่มควบคุมฝั่งซ้าย (ย้อนกลับ และ ขยายเต็มหน้าจอ)
     return f"""<!DOCTYPE html><html><head><meta charset="utf-8">
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
@@ -291,7 +268,7 @@ a{{text-decoration:none!important}}
 
 
 # =========================================================
-# PAGE 1 : UPLOAD (คงเดิม 100%)
+# PAGE 1 : UPLOAD
 # =========================================================
 if "processed_img" not in st.session_state or st.session_state.get("file_uploaded") is None:
 
@@ -330,7 +307,7 @@ if "processed_img" not in st.session_state or st.session_state.get("file_uploade
 
 
 # =========================================================
-# PAGE 2 : RESULT (ดักรับสเปคสัญญาณ Action Router ครบถ้วน)
+# PAGE 2 : RESULT
 # =========================================================
 else:
     processed_img  = st.session_state["processed_img"]
@@ -343,7 +320,7 @@ else:
         and extracted_json["error"]
     )
 
-    # 🕵️‍♂️ ดักจับสัญญาณลิงก์เปลี่ยนสถานะที่ยิงส่งมาจากในกล่องขาวข้ามเฟรม
+    # ดักจับสัญญาณการกดปุ่มเปลี่ยนหน้าต่างย่อย
     action = st.query_params.get("action", "")
 
     if action == "back":
@@ -353,23 +330,23 @@ else:
 
     elif action == "edit":
         st.query_params.clear()
-        st.toast("✏️ ระบบสแกน: เปิดสิทธิ์อนุญาตแก้ไขช่องฟิลด์ข้อมูลสำเร็จ")
+        st.toast("✏️ เปิดโหมดแก้ไขรายละเอียดฟิลด์ใบเสร็จ")
 
     elif action == "delete":
         st.query_params.clear()
-        st.toast("🗑️ ระบบสแกน: ดำเนินการลบแบบจำลองใบเสร็จรับเงินออกจากตาราง")
+        st.toast("🗑️ ดำเนินการลบข้อมูลใบเสร็จออกจากระบบ")
 
     elif action == "copy":
         st.query_params.clear()
-        st.toast("📋 ระบบสแกน: คัดลอกอักขระและราคาสินค้าลงใน Clipboard สำเร็จแล้ว")
+        st.toast("📋 คัดลอกข้อมูลสินค้าลงใน Clipboard แล้ว")
 
     elif action == "share":
         st.query_params.clear()
-        st.toast("🔗 ระบบสแกน: สร้างลิงก์และช่องทางการแชร์โครงข่ายสำเร็จ")
+        st.toast("🔗 สร้างลิงก์สำหรับส่งต่อและแชร์เรียบร้อย")
 
     elif action == "maximize":
         st.query_params.clear()
-        st.toast("🔍 ระบบสแกน: ขยายขนาดรูปภาพพรีวิวใบเสร็จแสดงผลเต็มหน้าจอ")
+        st.toast("🔍 ขยายขนาดรูปภาพใบเสร็จเพื่อการตรวจสอบ")
 
     elif action == "export":
         st.query_params.clear()
@@ -399,9 +376,7 @@ else:
     st.markdown('<div class="result-wrapper">', unsafe_allow_html=True)
     col_left, col_right = st.columns([1, 1])
 
-    # ════════════════════════════════════════
-    # LEFT (ฝั่งซ้าย)
-    # ════════════════════════════════════════
+    # ── LEFT (ฝั่งซ้าย) ──
     with col_left:
         st.markdown('<div class="img-card-wrap">', unsafe_allow_html=True)
         display_img = (
@@ -414,9 +389,7 @@ else:
 
         components.html(build_img_controls_html(), height=58, scrolling=False)
 
-    # ════════════════════════════════════════
-    # RIGHT (ฝั่งขวา)
-    # ════════════════════════════════════════
+    # ── RIGHT (ฝั่งขวา) ──
     with col_right:
         if has_error:
             st.error(f"❌ {extracted_json['error']}")
