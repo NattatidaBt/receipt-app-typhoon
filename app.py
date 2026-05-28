@@ -20,128 +20,119 @@ from ocr_engine import (
 )
 
 # =========================================================
-# CUSTOM CSS (RecAipt Pixel-Perfect Exact Layout)
+# CUSTOM CSS (RecAipt Pixel-Perfect Fix)
 # =========================================================
 st.markdown("""
 <style>
-
 /* =========================================================
    HIDE STREAMLIT DEFAULT UI
 ========================================================= */
-header,
-footer,
+header, footer, #MainMenu,
 [data-testid="stToolbar"],
-[data-testid="stSidebar"],
-#MainMenu {
+[data-testid="stSidebar"] {
     visibility: hidden !important;
     display: none !important;
     height: 0 !important;
 }
 
-/* =========================================================
-   GLOBAL APP STYLE
-========================================================= */
-.stApp {
-    background-color: #FFF3F7 !important;
-}
+.stApp { background-color: #FFF3F7 !important; }
 
 .block-container {
     max-width: 100% !important;
     padding: 1.5rem 3rem !important;
 }
 
-/* =========================================================
-   HEADER BAR
-========================================================= */
+/* Header */
 .header-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 30px;
-    margin-bottom: 50px;
-    background-color: #FFFFFF;
-    border-radius: 20px;
-    box-shadow: 0 4px 20px rgba(74, 46, 53, 0.02);
+    padding: 14px 28px;
+    margin-bottom: 40px;
+    background: #FFFFFF;
+    border-radius: 18px;
+    box-shadow: 0 2px 12px rgba(74,46,53,0.06);
 }
-
 .logo-text {
     color: #4A2E35;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
-
-.lang-dropdown {
-    background-color: #C97D98;
+.lang-pill {
+    background: #C97D98;
     color: white;
-    padding: 8px 16px;
+    padding: 7px 16px;
     border-radius: 10px;
     font-size: 13px;
     font-weight: 500;
 }
 
-/* =========================================================
-   HERO SECTION
-========================================================= */
+/* Hero */
 .hero-title {
     text-align: center;
     color: #4A2E35;
-    font-size: 34px;
+    font-size: 32px;
     font-weight: 500;
-    margin-top: 30px;
-    margin-bottom: 10px;
+    margin: 20px 0 10px;
 }
-
 .hero-subtitle {
     text-align: center;
     color: #C29BA4;
     font-size: 15px;
-    margin-bottom: 45px;
+    margin-bottom: 36px;
 }
 
 /* =========================================================
-   🔥 FILE UPLOADER RE-ARCHITECT (แก้ไขกล่องหายและปุ่มโผล่เด็ดขาด)
+   🔥 FILE UPLOADER FIXED (บังคับสร้างกรอบหุ้มสีขาว+ประชมพู)
 ========================================================= */
 section[data-testid="stFileUploader"] {
-    max-width: 850px;
-    margin: auto;
-    position: relative;
+    max-width: 820px;
+    margin: 0 auto 32px;
+    position: relative !important;
 }
 
-/* ดีไซน์กล่องสีขาวใบใหญ่ให้กางตัวออกและมีเส้นประสีชมพูตามสเปค */
+/* สร้างและตรึงความสูงกล่องสี่เหลี่ยมผืนผ้าสีขาวพร้อมเส้นประล้อมรอบเด็ดขาด */
 section[data-testid="stFileUploader"] > div {
-    background-color: white !important;
+    background-color: #FFFFFF !important;
     border: 2px dashed #F4C6D5 !important;
-    border-radius: 30px !important;
-    min-height: 260px !important;
+    border-radius: 28px !important;
+    min-height: 240px !important;
+    max-height: 240px !important;
     position: relative !important;
-    box-shadow: 0 12px 40px rgba(74, 46, 53, 0.03) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 10px 30px rgba(74, 46, 53, 0.03) !important;
     padding: 0 !important;
 }
 
-/* ซ่อนคำอธิบายและไอคอนเดิมของระบบที่หลุดธีม */
-[data-testid="stFileUploaderDropzoneInstructions"],
-[data-testid="stFileUploaderDropzone"] svg,
-.stFileUploaderSection,
-small[data-testid="stWidgetLabel-help"] {
+/* ซ่อนชิ้นส่วนดั้งเดิมและปุ่มเดิมของระบบอย่างถาวร */
+div[data-testid="stFileUploaderDropzone"] svg,
+div[data-testid="stFileUploaderDropzoneInstructions"],
+[data-testid="stFileUploaderFileHeader"],
+[data-testid="stFileUploaderDeleteBtn"],
+[data-testid="stFileUploaderFileName"],
+[data-testid="stFileUploaderFile"],
+small[data-testid="stWidgetLabel-help"],
+.stFileUploaderSection {
     display: none !important;
+    visibility: hidden !important;
 }
 
-/* ยืดพื้นที่ Dropzone ให้เต็มกรอบสีขาว */
-[data-testid="stFileUploaderDropzone"] {
+/* ยืดขยาย Dropzone และปุ่มดั้งเดิมให้ใหญ่เต็มกล่องขาว แล้วปรับให้โปร่งใสซ่อนตัวหลังหน้ากาก */
+div[data-testid="stFileUploaderDropzone"] {
     background: transparent !important;
     border: none !important;
-    min-height: 260px !important;
     width: 100% !important;
+    min-height: 240px !important;
     margin: 0 !important;
     padding: 0 !important;
 }
 
-/* ขยายปุ่ม Browse และข้อความเดิมให้ใหญ่เต็มกล่อง แล้วปรับให้โปร่งแสง 100% */
-[data-testid="stFileUploaderDropzone"] button,
-[data-testid="stFileUploaderDropzone"] div,
+div[data-testid="stFileUploaderDropzone"] button,
 [data-testid="stFileUploaderDropzoneInputButton"],
 [data-testid="stFileUploaderFileSize"] {
     position: absolute !important;
@@ -157,7 +148,7 @@ small[data-testid="stWidgetLabel-help"] {
 }
 
 /* =========================================================
-   CUSTOM UPLOAD CONTENT LAYER (หน้ากากข้อความมินิมอลจำลองกึ่งกลางเฟรม)
+   CUSTOM UPLOAD CONTENT (หน้ากากข้อความมินิมอลกึ่งกลางเฟรมพอดีเป๊ะ)
 ========================================================= */
 .upload-overlay {
     position: absolute;
@@ -178,8 +169,8 @@ small[data-testid="stWidgetLabel-help"] {
 }
 
 .upload-icon {
-    font-size: 50px;
-    margin-bottom: 15px;
+    font-size: 52px;
+    margin-bottom: 12px;
     color: #4A2E35;
 }
 
@@ -190,41 +181,28 @@ small[data-testid="stWidgetLabel-help"] {
 }
 
 /* =========================================================
-   RESULT CONTAINER & LAYOUT SPLIT-SCREEN
+   RESULT WRAPPER & LAYOUT
 ========================================================= */
 .result-wrapper {
     background: white;
-    border-radius: 32px;
-    padding: 35px;
-    max-width: 1400px;
-    margin: auto;
-    box-shadow: 0 10px 35px rgba(0,0,0,0.04);
+    border-radius: 26px;
+    padding: 26px;
+    border: 1px solid #F4E0E8;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.03);
 }
-
 div[data-testid="stHorizontalBlock"] {
     gap: 40px !important;
     align-items: flex-start !important;
 }
 
-/* การ์ดรายละเอียดใบเสร็จฝั่งขวา (คุมโทนสีชมพูตาม Mockup หน้า 3) */
 .receipt-card {
     background-color: #FFF6F8;
     border-radius: 24px;
-    padding: 30px;
+    padding: 28px;
     border: 1px solid #F8D7E3;
 }
 
-.receipt-title {
-    text-align: center;
-    color: #4A2E35;
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 25px;
-}
-
-/* =========================================================
-   INPUT ELEMENTS DESIGN
-========================================================= */
+/* Inputs */
 .stTextInput input,
 .stNumberInput input {
     background-color: white !important;
@@ -248,9 +226,7 @@ div[data-testid="stForm"] {
     padding: 0 !important;
 }
 
-/* =========================================================
-   BUTTON ACTIONS (ส่งออก และ ย้อนกลับ)
-========================================================= */
+/* Buttons */
 button[kind="formSubmit"] {
     background-color: #F8D7E3 !important;
     color: #A35271 !important;
@@ -259,37 +235,34 @@ button[kind="formSubmit"] {
     width: 100% !important;
     height: 48px !important;
     font-weight: bold !important;
-    font-size: 16px !important;
+    font-size: 15px !important;
     transition: all 0.2s ease !important;
-    box-shadow: 0 4px 10px rgba(212, 122, 154, 0.1) !important;
 }
-
 button[kind="formSubmit"]:hover {
     background-color: #D47A9A !important;
     color: white !important;
-    box-shadow: 0 6px 14px rgba(212, 122, 154, 0.2) !important;
 }
 
-div.stButton > button {
-    background-color: #F8D7E3 !important;
+div[data-testid="stButton"] > button {
+    background: #F8D7E3 !important;
     color: #A35271 !important;
-    border-radius: 12px !important;
-    width: 45px !important;
-    height: 45px !important;
     border: none !important;
+    border-radius: 12px !important;
     font-weight: bold !important;
+    width: 42px !important;
+    height: 42px !important;
     font-size: 18px !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# HEADER COMPONENT
+# HEADER
 # =========================================================
 st.markdown("""
 <div class="header-bar">
     <div class="logo-text">📄 RecAipt</div>
-    <div class="lang-dropdown">English ▾</div>
+    <div class="lang-pill">English ▾</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -324,9 +297,11 @@ if "processed_img" not in st.session_state or st.session_state.get("file_uploade
     st.markdown("<div class='hero-subtitle'>Upload an image or PDF of your receipt to store it using OCR</div>",
                 unsafe_allow_html=True)
 
-    uploaded_file = st.file_uploader("", type=["jpg", "jpeg", "png", "pdf"], key="uploader_widget")
+    # ฟังก์ชันเรียกใช้งานกล่องรับเอกสารหลัก
+    uploaded_file = st.file_uploader("", type=["jpg", "jpeg", "png", "pdf"], key="uploader_widget",
+                                     label_visibility="collapsed")
 
-    # ตัวครอบหน้ากากแบบเรียบหรูอยู่กึ่งกลางอย่างเที่ยงตรง
+    # บล็อกหน้ากากจำลองจัดให้อยู่กึ่งกลางกล่องขาวอย่างเป็นระเบียบ
     st.markdown("""
     <div class="upload-overlay">
         <div class="custom-upload-box">
@@ -346,8 +321,10 @@ if "processed_img" not in st.session_state or st.session_state.get("file_uploade
             if img is None:
                 st.error("❌ Unsupported file")
                 st.stop()
+
             deskewed_img = deskew_image(img)
-            st.session_state["processed_img"] = process_method_4_sharpening(deskewed_img)
+            processed = process_method_4_sharpening(deskewed_img)
+            st.session_state["processed_img"] = processed
 
         with st.spinner("⚡ Running OCR..."):
             raw_text = run_typhoon_ocr(st.session_state["processed_img"])
@@ -358,24 +335,23 @@ if "processed_img" not in st.session_state or st.session_state.get("file_uploade
             st.session_state.clear()
         else:
             with st.spinner("🤖 Structuring data..."):
-                st.session_state["extracted_json"] = call_typhoon_llm(raw_text)
+                extracted_json = call_typhoon_llm(raw_text)
+                st.session_state["extracted_json"] = extracted_json
             st.rerun()
 
 # =========================================================
-# PAGE 2 : RESULT DASHBOARD
+# PAGE 2 : RESULT PAGE
 # =========================================================
 else:
     processed_img = st.session_state["processed_img"]
     raw_text = st.session_state["raw_text"]
     extracted_json = st.session_state["extracted_json"]
 
-    # ปุ่มย้อนกลับทรงมนกลมสีชมพูพาสเทล
     st.button("←", key="back_to_upload", on_click=reset_app)
 
     st.markdown('<div class="result-wrapper">', unsafe_allow_html=True)
     col_left, col_right = st.columns([1, 1])
 
-    # ── ฝั่งซ้าย: รูปใบเสร็จรับเงินอ้างอิง ──
     with col_left:
         if len(processed_img.shape) == 2:
             display_img = cv2.cvtColor(processed_img, cv2.COLOR_GRAY2RGB)
@@ -387,10 +363,10 @@ else:
         with st.expander("📄 Raw OCR Text"):
             st.code(raw_text, language="text")
 
-    # ── ฝั่งขวา: รายละเอียดแบบฟอร์มแก้ไขและส่งออกข้อมูลฐานข้อมูล (RecAipt Card) ──
     with col_right:
         st.markdown('<div class="receipt-card">', unsafe_allow_html=True)
-        st.markdown('<div class="receipt-title">รายละเอียดใบเสร็จ</div>', unsafe_allow_html=True)
+        st.markdown('<h3 style="text-align:center; color:#4A2E35; margin-bottom:25px;">รายละเอียดใบเสร็จ</h3>',
+                    unsafe_allow_html=True)
 
         if "error" in extracted_json:
             st.error(extracted_json["error"])
@@ -398,10 +374,9 @@ else:
             with st.form("verified_receipt_form"):
                 merchant = st.text_input("🏪 ร้านค้า / ผู้ขาย", value=extracted_json.get("store_name", ""))
                 receipt_no = st.text_input("🧾 เลขที่ใบเสร็จ", value=extracted_json.get("receipt_no", ""))
-                date_val = st.text_input("📅 วันที่ (YYYY-MM-DD)", value=extracted_json.get("date", ""))
+                date_val = st.text_input("📅 วันที่", value=extracted_json.get("date", ""))
 
-                st.markdown("<p style='font-weight:bold; margin-top:20px; color:#4A2E35;'>📦 รายการสินค้าและบริการ</p>",
-                            unsafe_allow_html=True)
+                st.markdown("---")
                 items_list = extracted_json.get("items", []) or []
                 edited_items = []
 
@@ -409,11 +384,16 @@ else:
                     c1, c2, c3 = st.columns([5, 2, 3])
                     with c1:
                         i_name = st.text_input(f"รายการ #{idx + 1}", value=item.get("name", ""), key=f"n_{idx}")
+
+                    raw_qty = item.get("qty", 1)
+                    qty_value = safe_int(raw_qty)
                     with c2:
-                        i_qty = st.number_input("จำนวน", value=safe_int(item.get("qty", 1)), step=1, key=f"q_{idx}")
+                        i_qty = st.number_input("จำนวน", value=qty_value, step=1, key=f"q_{idx}")
+
+                    raw_price = item.get("unit_price", 0)
+                    price_value = safe_float(raw_price)
                     with c3:
-                        i_price = st.number_input("ราคาต่อหน่วย", value=safe_float(item.get("unit_price", 0)), step=0.5,
-                                                  key=f"p_{idx}")
+                        i_price = st.number_input("ราคา", value=price_value, step=0.5, key=f"p_{idx}")
 
                     edited_items.append({
                         "name": i_name,
@@ -424,18 +404,18 @@ else:
 
                 st.markdown("---")
                 subtotal_value = safe_float(extracted_json.get("subtotal", 0))
-                subtotal = st.number_input("ยอดรวมก่อนภาษี (Subtotal)", value=subtotal_value, step=0.5)
+                subtotal = st.number_input("ยอดรวมก่อนภาษี", value=subtotal_value, step=0.5)
 
                 vat_value = safe_float(extracted_json.get("vat", 0))
-                vat = st.number_input("ภาษีมูลค่าเพิ่ม (VAT 7%)", value=vat_value, step=0.1)
+                vat = st.number_input("VAT 7%", value=vat_value, step=0.1)
 
                 total_value = safe_float(extracted_json.get("total", 0))
-                total = st.number_input("ยอดรวมทั้งหมดสุทธิ (Grand Total)", value=total_value, step=0.5)
+                total = st.number_input("ยอดรวมทั้งหมด", value=total_value, step=0.5)
 
-                save_btn = st.form_submit_button("📤  ส่งออก")
+                save_btn = st.form_submit_button("📤 ส่งออก")
 
             if save_btn:
-                st.success("🎉 บันทึกและดึงข้อมูลเข้าสู่ฐานข้อมูลเสร็จสิ้นเรียบร้อยแล้ว!")
+                st.success("🎉 บันทึกข้อมูลเรียบร้อยแล้ว")
                 st.json({
                     "store_name": merchant,
                     "receipt_no": receipt_no,
