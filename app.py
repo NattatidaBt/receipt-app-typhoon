@@ -1,6 +1,6 @@
 import cv2
 import streamlit as st
-import streamlit.components.v1 as components  # 🔴 เพิ่มการ Import จุดนี้เพื่อแก้ปัญหา NameError เด็ดขาด
+import streamlit.components.v1 as components
 
 # =========================================================
 # PAGE CONFIG
