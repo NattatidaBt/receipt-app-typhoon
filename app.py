@@ -1,5 +1,6 @@
 import cv2
 import streamlit as st
+import streamlit.components.v1 as components
 
 # =========================================================
 # PAGE CONFIG
@@ -23,8 +24,6 @@ from ocr_engine import (
 # =========================================================
 st.markdown("""
 <style>
-
-/* ── Hide Streamlit chrome ── */
 header, footer, #MainMenu,
 [data-testid="stToolbar"],
 [data-testid="stSidebar"] {
@@ -33,16 +32,14 @@ header, footer, #MainMenu,
     height: 0 !important;
 }
 
-/* ── Global ── */
-.stApp {
-    background-color: #FFF3F7 !important;
-}
+.stApp { background-color: #FFF3F7 !important; }
+
 .block-container {
     max-width: 100% !important;
     padding: 1.5rem 3rem !important;
 }
 
-/* ── Header bar ── */
+/* Header */
 .header-bar {
     display: flex;
     justify-content: space-between;
@@ -70,7 +67,7 @@ header, footer, #MainMenu,
     font-weight: 500;
 }
 
-/* ── Hero ── */
+/* Hero */
 .hero-title {
     text-align: center;
     color: #4A2E35;
@@ -85,30 +82,25 @@ header, footer, #MainMenu,
     margin-bottom: 36px;
 }
 
-/* ── Upload zone wrapper ──
-   ทำให้ Streamlit uploader ดูเหมือน custom dropzone
-   โดยไม่ซ่อน element ใดเลย แค่ style ทับ ──  */
+/* Uploader */
+section[data-testid="stFileUploader"] {
+    max-width: 780px;
+    margin: 0 auto 32px;
+}
 div[data-testid="stFileUploaderDropzone"] {
     background: white !important;
     border: 2px dashed #F4C6D5 !important;
     border-radius: 28px !important;
-    min-height: 260px !important;
+    min-height: 220px !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
-    transition: border-color 0.2s;
 }
 div[data-testid="stFileUploaderDropzone"]:hover {
     border-color: #C97D98 !important;
 }
-
-/* ซ่อนเฉพาะ SVG icon เดิมของ Streamlit (ก้อนเมฆ) */
-div[data-testid="stFileUploaderDropzone"] svg {
-    display: none !important;
-}
-
-/* ข้อความ drag & drop เดิม */
+div[data-testid="stFileUploaderDropzone"] svg { display: none !important; }
 div[data-testid="stFileUploaderDropzoneInstructions"] > div > span {
     font-size: 15px !important;
     color: #A3858C !important;
@@ -117,25 +109,15 @@ div[data-testid="stFileUploaderDropzoneInstructions"] > div > small {
     color: #C29BA4 !important;
     font-size: 12px !important;
 }
-
-/* ปุ่ม Browse ดั้งเดิม */
-div[data-testid="stFileUploaderDropzone"] button[data-testid="baseButton-secondary"] {
+div[data-testid="stFileUploaderDropzone"] button {
     background: #F8D7E3 !important;
     color: #A35271 !important;
     border: none !important;
     border-radius: 12px !important;
     font-weight: 600 !important;
-    padding: 8px 24px !important;
-    margin-top: 14px !important;
 }
 
-/* จำกัดความกว้าง uploader */
-section[data-testid="stFileUploader"] {
-    max-width: 780px;
-    margin: 0 auto 32px;
-}
-
-/* ── Result wrapper ── */
+/* Result wrapper */
 .result-wrapper {
     background: white;
     border-radius: 26px;
@@ -148,7 +130,7 @@ div[data-testid="stHorizontalBlock"] {
     align-items: flex-start !important;
 }
 
-/* ── Left: image card ── */
+/* Image card */
 .img-card-wrap {
     background: #FAFAFA;
     border-radius: 18px;
@@ -156,106 +138,14 @@ div[data-testid="stHorizontalBlock"] {
     border: 1px solid #F4C6D5;
 }
 
-/* ── Right: detail card ── */
-.detail-card {
-    background: white;
-    border-radius: 18px;
-    border: 1px solid #F4C6D5;
-    overflow: hidden;
-}
-.dc-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 18px;
-    border-bottom: 1px solid #F4E0E8;
-}
-.dc-title { font-size: 15px; font-weight: 700; color: #4A2E35; }
-.dc-icon-btn {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 17px;
-    padding: 3px 6px;
-    border-radius: 6px;
-    color: #C97D98;
-}
-.dc-icon-btn:hover { background: #FFF0F5; }
-
-.dc-body { padding: 16px 18px; }
-
-.receipt-badge {
-    display: inline-block;
-    background: #FFF0F5;
-    color: #A35271;
-    border: 1px solid #F4C6D5;
-    border-radius: 8px;
-    font-size: 12px;
-    padding: 4px 12px;
-    margin-bottom: 16px;
-}
-.info-row {
-    display: flex;
-    gap: 8px;
-    font-size: 13px;
-    margin-bottom: 9px;
-}
-.info-lbl { color: #C29BA4; min-width: 112px; flex-shrink: 0; }
-.info-val { color: #4A2E35; font-weight: 600; }
-
-.divider { border: none; border-top: 1px solid #F4E0E8; margin: 14px 0; }
-.sec-lbl { font-size: 12px; color: #C29BA4; margin-bottom: 8px; }
-
-.items-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
-.items-tbl th {
-    color: #C29BA4; font-weight: 400;
-    padding: 4px 6px 9px;
-    border-bottom: 1px solid #F4E0E8;
-    text-align: center;
-}
-.items-tbl th:nth-child(2) { text-align: left; }
-.items-tbl td { padding: 8px 6px; color: #4A2E35; text-align: center; }
-.items-tbl td:nth-child(2) { text-align: left; }
-.items-tbl .num { color: #C29BA4; font-size: 12px; }
-
-.totals { padding-top: 2px; }
-.t-row {
-    display: flex; justify-content: space-between;
-    font-size: 13px; color: #A07A85; margin-bottom: 7px;
-}
-.t-row.grand { color: #4A2E35; font-weight: 700; font-size: 14px; margin-bottom: 0; }
-
-.dc-footer {
-    display: flex; justify-content: flex-end; align-items: center;
-    gap: 8px; padding: 11px 18px 15px;
-    border-top: 1px solid #F4E0E8;
-}
-.f-icon-btn {
-    background: white; border: 1px solid #F4C6D5;
-    color: #A35271; border-radius: 10px;
-    width: 36px; height: 36px; font-size: 15px;
-    cursor: pointer; display: inline-flex;
-    align-items: center; justify-content: center;
-}
-.f-icon-btn:hover { background: #FFF0F5; }
-
-/* Export button ใช้ st.button จึง override ที่นี่ */
+/* Back + Export buttons */
 div[data-testid="stButton"] > button {
     background: #F8D7E3 !important;
     color: #A35271 !important;
     border: none !important;
     border-radius: 12px !important;
     font-weight: 700 !important;
-    font-size: 14px !important;
-    height: 42px !important;
-    width: 100% !important;
-    margin-top: 4px !important;
 }
-div[data-testid="stButton"] > button:hover {
-    background: #F0C0D5 !important;
-}
-
-/* Back button เล็กกว่า */
 .back-wrap div[data-testid="stButton"] > button {
     width: 42px !important;
     height: 42px !important;
@@ -263,7 +153,12 @@ div[data-testid="stButton"] > button:hover {
     padding: 0 !important;
     margin-top: 10px !important;
 }
-
+.export-wrap div[data-testid="stButton"] > button {
+    width: 100% !important;
+    height: 42px !important;
+    font-size: 14px !important;
+    margin-top: 0 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -295,6 +190,204 @@ def safe_int(value, default=1):
         return int(float(str(value).replace(",", "").strip()))
     except Exception:
         return default
+
+def build_detail_card_html(extracted_json):
+    """สร้าง HTML ของ detail card ทั้งหมด — render ด้วย components.html() เพื่อหลีกเลี่ยง Streamlit escape"""
+    merchant     = extracted_json.get("store_name", "—") or "—"
+    receipt_no   = extracted_json.get("receipt_no",  "—") or "—"
+    date_val     = extracted_json.get("date",        "—") or "—"
+    receipt_type = extracted_json.get("receipt_type", "ใบกำกับภาษีอย่างย่อ") or "ใบกำกับภาษีอย่างย่อ"
+    items_list   = extracted_json.get("items", []) or []
+    subtotal_val = safe_float(extracted_json.get("subtotal", 0))
+    vat_val      = safe_float(extracted_json.get("vat",      0))
+    total_val    = safe_float(extracted_json.get("total",    0))
+
+    rows_html = ""
+    for idx, item in enumerate(items_list):
+        name  = item.get("name", "")
+        qty   = safe_int(item.get("qty", 1))
+        price = safe_float(item.get("unit_price", 0))
+        amt   = qty * price
+        rows_html += f"""
+        <tr>
+            <td class="num">{idx + 1}</td>
+            <td>{name}</td>
+            <td>{qty}</td>
+            <td>{price:,.2f}</td>
+            <td style="text-align:right">{amt:,.2f}</td>
+        </tr>"""
+
+    if not rows_html:
+        rows_html = '<tr><td colspan="5" style="text-align:center;color:#C29BA4;padding:16px 0">ไม่พบรายการสินค้า</td></tr>'
+
+    subtotal_row = (f'<div class="t-row"><span>ยอดก่อน VAT :</span>'
+                    f'<span>{subtotal_val:,.2f} บาท</span></div>') if subtotal_val else ""
+    vat_row = (f'<div class="t-row"><span>VAT 7% :</span>'
+               f'<span>{vat_val:,.2f} บาท</span></div>') if vat_val else ""
+
+    return f"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: transparent;
+    padding: 0;
+  }}
+  .detail-card {{
+    background: white;
+    border-radius: 18px;
+    border: 1px solid #F4C6D5;
+    overflow: hidden;
+    font-size: 14px;
+  }}
+  .dc-header {{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid #F4E0E8;
+  }}
+  .dc-title {{
+    font-size: 15px;
+    font-weight: 700;
+    color: #4A2E35;
+  }}
+  .dc-icon-btn {{
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 17px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    color: #C97D98;
+  }}
+  .dc-icon-btn:hover {{ background: #FFF0F5; }}
+  .dc-body {{ padding: 16px 18px; }}
+  .receipt-badge {{
+    display: inline-block;
+    background: #FFF0F5;
+    color: #A35271;
+    border: 1px solid #F4C6D5;
+    border-radius: 8px;
+    font-size: 12px;
+    padding: 4px 12px;
+    margin-bottom: 16px;
+  }}
+  .info-row {{
+    display: flex;
+    gap: 8px;
+    font-size: 13px;
+    margin-bottom: 9px;
+    align-items: baseline;
+  }}
+  .info-lbl {{ color: #C29BA4; min-width: 120px; flex-shrink: 0; }}
+  .info-val {{ color: #4A2E35; font-weight: 600; }}
+  .divider {{ border: none; border-top: 1px solid #F4E0E8; margin: 14px 0; }}
+  .sec-lbl {{ font-size: 12px; color: #C29BA4; margin-bottom: 8px; }}
+  .items-tbl {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
+  .items-tbl th {{
+    color: #C29BA4;
+    font-weight: 400;
+    padding: 4px 6px 9px;
+    border-bottom: 1px solid #F4E0E8;
+    text-align: center;
+  }}
+  .items-tbl th:nth-child(2) {{ text-align: left; }}
+  .items-tbl td {{ padding: 8px 6px; color: #4A2E35; text-align: center; }}
+  .items-tbl td:nth-child(2) {{ text-align: left; }}
+  .num {{ color: #C29BA4; font-size: 12px; }}
+  .totals {{ padding-top: 2px; }}
+  .t-row {{
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #A07A85;
+    margin-bottom: 7px;
+  }}
+  .grand {{ color: #4A2E35; font-weight: 700; font-size: 14px; margin-bottom: 0; }}
+  .dc-footer {{
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 18px 15px;
+    border-top: 1px solid #F4E0E8;
+  }}
+  .f-icon-btn {{
+    background: white;
+    border: 1px solid #F4C6D5;
+    color: #A35271;
+    border-radius: 10px;
+    width: 36px;
+    height: 36px;
+    font-size: 15px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }}
+  .f-icon-btn:hover {{ background: #FFF0F5; }}
+</style>
+</head>
+<body>
+<div class="detail-card">
+  <div class="dc-header">
+    <span class="dc-title">รายละเอียดใบเสร็จ</span>
+    <div>
+      <button class="dc-icon-btn" title="แก้ไข">✏️</button>
+      <button class="dc-icon-btn" title="ลบ">🗑️</button>
+    </div>
+  </div>
+  <div class="dc-body">
+    <span class="receipt-badge">{receipt_type}</span>
+    <div class="info-row">
+      <span class="info-lbl">ร้านค้า / ผู้ขาย :</span>
+      <span class="info-val">{merchant}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-lbl">เลขที่ใบเสร็จ :</span>
+      <span class="info-val">{receipt_no}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-lbl">วันที่ :</span>
+      <span class="info-val">{date_val}</span>
+    </div>
+    <hr class="divider">
+    <div class="sec-lbl">รายการสินค้า</div>
+    <table class="items-tbl">
+      <thead>
+        <tr>
+          <th style="width:32px">ลำดับ</th>
+          <th>รายการ</th>
+          <th style="width:50px">จำนวน</th>
+          <th style="width:60px">ราคา</th>
+          <th style="width:60px;text-align:right">รวม</th>
+        </tr>
+      </thead>
+      <tbody>{rows_html}</tbody>
+    </table>
+    <hr class="divider">
+    <div class="totals">
+      {subtotal_row}
+      {vat_row}
+      <div class="t-row grand">
+        <span>ยอดรวม :</span>
+        <span>{total_val:,.2f} บาท</span>
+      </div>
+    </div>
+  </div>
+  <div class="dc-footer">
+    <button class="f-icon-btn" title="คัดลอก">📋</button>
+    <button class="f-icon-btn" title="แชร์">↑</button>
+  </div>
+</div>
+</body>
+</html>
+"""
 
 
 # =========================================================
@@ -350,10 +443,17 @@ else:
     raw_text       = st.session_state["raw_text"]
     extracted_json = st.session_state["extracted_json"]
 
+    # ── ตรวจ error อย่างเข้มงวด: เฉพาะกรณีที่ error มีค่าจริงๆ ──
+    has_error = (
+        isinstance(extracted_json, dict)
+        and "error" in extracted_json
+        and extracted_json["error"]  # ไม่ใช่ None / "" / False
+    )
+
     st.markdown('<div class="result-wrapper">', unsafe_allow_html=True)
     col_left, col_right = st.columns([1, 1])
 
-    # ── LEFT ──────────────────────────────────────────────
+    # ── LEFT: รูปใบเสร็จ ──
     with col_left:
         st.markdown('<div class="img-card-wrap">', unsafe_allow_html=True)
 
@@ -373,109 +473,26 @@ else:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── RIGHT ─────────────────────────────────────────────
+    # ── RIGHT: รายละเอียดใบเสร็จ ──
     with col_right:
-        if "error" in extracted_json:
-            st.error(extracted_json["error"])
+        if has_error:
+            st.error(f"❌ {extracted_json['error']}")
         else:
-            merchant     = extracted_json.get("store_name", "—") or "—"
-            receipt_no   = extracted_json.get("receipt_no",  "—") or "—"
-            date_val     = extracted_json.get("date",        "—") or "—"
-            receipt_type = extracted_json.get("receipt_type", "ใบกำกับภาษีอย่างย่อ") or "ใบกำกับภาษีอย่างย่อ"
-            items_list   = extracted_json.get("items", []) or []
-            subtotal_val = safe_float(extracted_json.get("subtotal", 0))
-            vat_val      = safe_float(extracted_json.get("vat",      0))
-            total_val    = safe_float(extracted_json.get("total",    0))
+            # คำนวณความสูง card โดยประมาณจากจำนวน items
+            items_count = len(extracted_json.get("items", []) or [])
+            card_height = 520 + max(0, items_count - 3) * 36
 
-            # สร้าง rows ตาราง
-            rows_html = ""
-            for idx, item in enumerate(items_list):
-                name  = item.get("name", "")
-                qty   = safe_int(item.get("qty", 1))
-                price = safe_float(item.get("unit_price", 0))
-                amt   = qty * price
-                rows_html += f"""
-                <tr>
-                    <td class="num">{idx + 1}</td>
-                    <td>{name}</td>
-                    <td>{qty}</td>
-                    <td>{price:,.2f}</td>
-                    <td style="text-align:right">{amt:,.2f}</td>
-                </tr>"""
+            # render ด้วย components.html เพื่อหลีกเลี่ยง Streamlit HTML escaping
+            components.html(
+                build_detail_card_html(extracted_json),
+                height=card_height,
+                scrolling=False,
+            )
 
-            if not rows_html:
-                rows_html = '<tr><td colspan="5" style="text-align:center;color:#C29BA4;padding:16px 0">ไม่พบรายการสินค้า</td></tr>'
-
-            subtotal_row = (f'<div class="t-row"><span>ยอดก่อน VAT :</span>'
-                            f'<span>{subtotal_val:,.2f} บาท</span></div>') if subtotal_val else ""
-            vat_row      = (f'<div class="t-row"><span>VAT 7% :</span>'
-                            f'<span>{vat_val:,.2f} บาท</span></div>') if vat_val else ""
-
-            st.markdown(f"""
-            <div class="detail-card">
-
-              <div class="dc-header">
-                <span class="dc-title">รายละเอียดใบเสร็จ</span>
-                <div>
-                  <button class="dc-icon-btn" title="แก้ไข">✏️</button>
-                  <button class="dc-icon-btn" title="ลบ">🗑️</button>
-                </div>
-              </div>
-
-              <div class="dc-body">
-                <span class="receipt-badge">{receipt_type}</span>
-
-                <div class="info-row">
-                  <span class="info-lbl">ร้านค้า / ผู้ขาย :</span>
-                  <span class="info-val">{merchant}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-lbl">เลขที่ใบเสร็จ :</span>
-                  <span class="info-val">{receipt_no}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-lbl">วันที่ :</span>
-                  <span class="info-val">{date_val}</span>
-                </div>
-
-                <hr class="divider">
-                <div class="sec-lbl">รายการสินค้า</div>
-
-                <table class="items-tbl">
-                  <thead>
-                    <tr>
-                      <th style="width:32px">ลำดับ</th>
-                      <th>รายการ</th>
-                      <th style="width:50px">จำนวน</th>
-                      <th style="width:60px">ราคา</th>
-                      <th style="width:60px;text-align:right">รวม</th>
-                    </tr>
-                  </thead>
-                  <tbody>{rows_html}</tbody>
-                </table>
-
-                <hr class="divider">
-
-                <div class="totals">
-                  {subtotal_row}
-                  {vat_row}
-                  <div class="t-row grand">
-                    <span>ยอดรวม :</span>
-                    <span>{total_val:,.2f} บาท</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="dc-footer">
-                <button class="f-icon-btn" title="คัดลอก">📋</button>
-                <button class="f-icon-btn" title="แชร์">↑</button>
-              </div>
-
-            </div>
-            """, unsafe_allow_html=True)
-
-            # ปุ่ม ส่งออก ต้องใช้ Streamlit widget เพื่อ trigger Python
+            # ปุ่ม ส่งออก
+            st.markdown('<div class="export-wrap">', unsafe_allow_html=True)
             if st.button("📤  ส่งออก", key="export_btn"):
+                items_list = extracted_json.get("items", []) or []
                 export_items = [
                     {
                         "name":       it.get("name", ""),
@@ -487,13 +504,14 @@ else:
                 ]
                 st.success("🎉 บันทึกข้อมูลเรียบร้อยแล้ว")
                 st.json({
-                    "store_name": merchant,
-                    "receipt_no": receipt_no,
-                    "date":       date_val,
+                    "store_name": extracted_json.get("store_name", "—"),
+                    "receipt_no": extracted_json.get("receipt_no",  "—"),
+                    "date":       extracted_json.get("date",        "—"),
                     "items":      export_items,
-                    "subtotal":   subtotal_val,
-                    "vat":        vat_val,
-                    "total":      total_val,
+                    "subtotal":   safe_float(extracted_json.get("subtotal", 0)),
+                    "vat":        safe_float(extracted_json.get("vat",      0)),
+                    "total":      safe_float(extracted_json.get("total",    0)),
                 })
+            st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
