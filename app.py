@@ -9,6 +9,7 @@ from ocr_engine import (
     run_typhoon_ocr,
 )
 
+# 1. ตั้งค่าโครงสร้างหน้าเว็บหลักเป็นแบบ Wide Mode
 st.set_page_config(page_title="RecAipt - Typhoon End-to-End", layout="wide")
 
 st.title("📄 ระบบอ่านและสกัดข้อมูลจากใบเสร็จรับเงินอัตโนมัติ")
@@ -17,24 +18,45 @@ st.caption(
     "ขอบเขตสถาปัตยกรรมโมเดลร่วมค่าย Typhoon End-to-End"
 )
 
-# 🎨 แทรกสไตล์ CSS ปรับแต่งโครงสร้างหน้าจอและกล่องข้อมูลให้โค้งมนสไตล์สีชมพูพาสเทล
+# 🎨 แทรกสไตล์ CSS ปรับเปลี่ยนสีพื้นหลัง สีตัวอักษร และความโค้งมนให้เป็นสีชมพูพาสเทลทั้งแอปพลิเคชัน
 st.markdown("""
     <style>
-    /* 1. ปรับแต่งกล่องพื้นที่สำหรับลากและวางไฟล์อัปโหลดใบเสร็จ */
+    /* บังคับเปลี่ยนสีพื้นหลังของแอปพลิเคชันทั้งหมด (Global Background) */
+    .stApp {
+        background-color: #FFF0F4 !important;
+    }
+
+    /* บังคับเปลี่ยนสีตัวอักษรหลักทั้งหมดให้อ่านง่ายและเข้ากับธีม */
+    h1, h2, h3, p, span, label, .stMarkdown {
+        color: #4A2E35 !important;
+    }
+
+    /* ปรับแต่งกล่องพื้นที่สำหรับลากและวางไฟล์อัปโหลดใบเสร็จ */
     .stFileUploader {
         border: 2px dashed #D47A9A !important;
         border-radius: 15px !important;
         background-color: #FCE4EC !important;
+        padding: 10px !important;
     }
-    /* 2. ปรับแต่งฟอร์มกล่องข้อมูลฝั่งขวาให้ออกโทนขาวคลีน โค้งมน และมีเงามิติบางๆ */
+
+    /* ปรับแต่งกล่องข้อความ Input และแถบรับตัวเลขฝั่งขวาทั้งหมด */
+    .stTextInput input, .stNumberInput input {
+        background-color: #FCE4EC !important;
+        color: #4A2E35 !important;
+        border: 1px solid #F8BBD0 !important;
+        border-radius: 10px !important;
+    }
+
+    /* ปรับแต่งฟอร์มกล่องข้อมูลฝั่งขวาทั้งหมดให้ออกโทนขาวคลีน ละมุนตา และมีเงามิติ */
     div[data-testid="stForm"] {
         border: 1px solid #F8BBD0 !important;
         border-radius: 20px !important;
         background-color: #FFFFFF !important;
-        box-shadow: 0 4px 12px rgba(212, 122, 154, 0.12);
+        box-shadow: 0 4px 15px rgba(212, 122, 154, 0.15) !important;
         padding: 2.5rem !important;
     }
-    /* 3. ปรับแต่งปุ่มกดบันทึก (Form Submit Button) ให้เป็นบล็อกสีชมพูเด่นชัดน่าใช้งาน */
+
+    /* บังคับเปลี่ยนสีปุ่มกดบันทึกข้อมูล (Form Submit Button) ให้เป็นสีชมพูหวานเด่นชัด */
     button[kind="formSubmit"] {
         background-color: #D47A9A !important;
         color: white !important;
@@ -44,14 +66,25 @@ st.markdown("""
         font-weight: bold !important;
         font-size: 16px !important;
         padding: 0.6rem 0 !important;
-        transition: background-color 0.3s ease, transform 0.1s ease;
+        box-shadow: 0 4px 6px rgba(212, 122, 154, 0.2) !important;
+        transition: all 0.3s ease !important;
     }
+
     button[kind="formSubmit"]:hover {
         background-color: #C26383 !important;
         color: white !important;
+        box-shadow: 0 6px 12px rgba(212, 122, 154, 0.3) !important;
     }
+
     button[kind="formSubmit"]:active {
-        transform: scale(0.98);
+        transform: scale(0.98) !important;
+    }
+
+    /* ปรับแต่งแผง Expander ข้อความ OCR ดิบด้านล่าง */
+    .stDetails {
+        background-color: #FFFFFF !important;
+        border: 1px solid #F8BBD0 !important;
+        border-radius: 10px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -135,10 +168,12 @@ if uploaded_file is not None:
                                 key=f"n_{idx}",
                             )
 
-                        # 🛡️ ป้องกันบั๊ก: จัดการการแปลงข้อมูลจำนวนชิ้น (qty) ให้ปลอดภัย
+                        # 🛡️ Data Type Safety: ล้างข้อมูลและแปลงค่าจำนวนชิ้น (qty) ให้ปลอดภัย
+                        import re
+
                         raw_qty = item.get("qty", 1)
                         if isinstance(raw_qty, str):
-                            raw_qty = re.sub(r"[^\d.]", "", raw_qty)  # ตัดตัวอักษรแปลกปลอมออก
+                            raw_qty = re.sub(r"[^\d.]", "", raw_qty)
                         try:
                             default_qty = int(float(raw_qty)) if raw_qty else 1
                         except:
@@ -152,7 +187,7 @@ if uploaded_file is not None:
                                 key=f"q_{idx}",
                             )
 
-                        # 🛡️ ป้องกันบั๊ก: จัดการล้างเครื่องหมายจุลภาค คอมมา ออกจากราคาสินค้าก่อนแปลงเป็น float
+                        # 🛡️ Data Type Safety: ล้างเครื่องหมายจุลภาคออกจากราคาสินค้าก่อนแปลงเป็น float เพื่อกันเว็บบั๊ก
                         raw_price = item.get("unit_price", 0.0)
                         if isinstance(raw_price, str):
                             raw_price = raw_price.replace(",", "")
@@ -179,9 +214,10 @@ if uploaded_file is not None:
 
                     st.write("---")
 
-                    # 🛡️ ล้างเครื่องหมายคอมมาออกจากข้อมูลสรุปยอดเงินรวมก่อนดึงมาแสดงผล
+                    # 🛡️ Data Type Safety: ล้างเครื่องหมายจุลภาคออกจากข้อมูลสรุปยอดเงินสุทธิ
                     raw_subtotal = extracted_json.get("subtotal", 0.0)
-                    if isinstance(raw_subtotal, str): raw_subtotal = raw_subtotal.replace(",", "")
+                    if isinstance(raw_subtotal, str):
+                        raw_subtotal = raw_subtotal.replace(",", "")
                     try:
                         default_subtotal = float(raw_subtotal) if raw_subtotal else 0.0
                     except:
@@ -194,7 +230,8 @@ if uploaded_file is not None:
                     )
 
                     raw_vat = extracted_json.get("vat", 0.0)
-                    if isinstance(raw_vat, str): raw_vat = raw_vat.replace(",", "")
+                    if isinstance(raw_vat, str):
+                        raw_vat = raw_vat.replace(",", "")
                     try:
                         default_vat = float(raw_vat) if raw_vat else 0.0
                     except:
@@ -207,7 +244,8 @@ if uploaded_file is not None:
                     )
 
                     raw_total = extracted_json.get("total", 0.0)
-                    if isinstance(raw_total, str): raw_total = raw_total.replace(",", "")
+                    if isinstance(raw_total, str):
+                        raw_total = raw_total.replace(",", "")
                     try:
                         default_total = float(raw_total) if raw_total else 0.0
                     except:
