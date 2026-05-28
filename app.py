@@ -1,6 +1,5 @@
 import cv2
 import streamlit as st
-import streamlit.components.v1 as components
 
 # =========================================================
 # PAGE CONFIG
@@ -20,7 +19,7 @@ from ocr_engine import (
 )
 
 # =========================================================
-# GLOBAL CSS (คงเดิม 100% ดีไซน์ไม่เปลี่ยน)
+# GLOBAL CSS (คงสไตล์และดีไซน์เดิมของคุณไว้ 100% ห้ามขยับ)
 # =========================================================
 st.markdown("""
 <style>
@@ -78,7 +77,8 @@ header, footer, #MainMenu,
 [data-testid="stFileUploaderDropzoneInstructions"] > div > small { display:none !important; }
 [data-testid="stFileUploaderDropzoneInstructions"] {
     display:flex !important; flex-direction:column !important;
-    align-items:center !}
+    align-items:center !important;
+}
 [data-testid="stFileUploaderDropzoneInstructions"]::before {
     content:"📄"; font-size:44px; line-height:1;
     margin-bottom:14px; display:block;
@@ -114,7 +114,7 @@ button[title="View fullscreen"] {display:none !important;}
 """, unsafe_allow_html=True)
 
 # =========================================================
-# HEADER COMPONENT (คงเดิม 100%)
+# HEADER COMPONENT (คงสไตล์ดั้งเดิม 100%)
 # =========================================================
 st.markdown("""
 <div class="header-bar">
@@ -149,7 +149,7 @@ def safe_int(value, default=1):
     except Exception: return default
 
 # =========================================================
-# HTML BUILDERS & SVG ICONS (คงเดิม 100%)
+# HTML BUILDERS & SVG ICONS (ปรับให้ส่งค่าผ่านแท็ก Link พุ่งข้ามกรอบได้จริง)
 # =========================================================
 SVG_BACK   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>'
 SVG_EDIT   = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
@@ -184,12 +184,13 @@ def build_detail_card_html(extracted_json):
     subtotal_row = f'<div class="t-row"><span>ยอดก่อน VAT :</span><span>{subtotal_val:,.2f} บาท</span></div>' if subtotal_val else ""
     vat_row      = f'<div class="t-row"><span>VAT 7% :</span><span>{vat_val:,.2f} บาท</span></div>' if vat_val else ""
 
-    # ✨ ปรับแต่งให้ปุ่มในส่วนการ์ด ส่งค่า Query String ผ่านโครงสร้าง window.parent.parent หลัก
+    # 🔴 ปรับโครงสร้างแท็กให้เป็น <a> พร้อม target="_parent" ปลดล็อกการกดปุ่มแบบไม่เปลี่ยนสไตล์
     return f"""<!DOCTYPE html><html><head><meta charset="utf-8">
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:transparent;padding:2px}}
 svg{{display:inline-block;vertical-align:middle;flex-shrink:0}}
+a{{text-decoration:none!important}}
 .card{{background:#FFF6F8;border-radius:24px;border:1px solid #F8D7E3;padding:24px 28px;overflow:hidden}}
 .dc-header{{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}}
 .dc-back{{width:32px;height:32px;border-radius:50%;background:#F8D7E3;color:#A35271;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}}
@@ -216,11 +217,11 @@ svg{{display:inline-block;vertical-align:middle;flex-shrink:0}}
 </style></head><body>
 <div class="card">
   <div class="dc-header">
-    <button class="dc-back" onclick="window.parent.parent.location.search='?action=back'">{SVG_BACK}</button>
+    <a href="?action=back" target="_parent" class="dc-back">{SVG_BACK}</a>
     <span class="dc-title">รายละเอียดใบเสร็จ</span>
     <div class="dc-icons">
-      <button class="icon-btn" title="แก้ไข" onclick="window.parent.parent.location.search='?action=edit'">{SVG_EDIT}</button>
-      <button class="icon-btn" title="ลบ" onclick="window.parent.parent.location.search='?action=delete'">{SVG_DELETE}</button>
+      <a href="?action=edit" target="_parent" class="icon-btn" title="แก้ไข">{SVG_EDIT}</a>
+      <a href="?action=delete" target="_parent" class="icon-btn" title="ลบ">{SVG_DELETE}</a>
     </div>
   </div>
   <div class="dc-body">
@@ -253,6 +254,7 @@ def build_action_bar_html():
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:transparent}}
 svg{{display:inline-block;vertical-align:middle}}
+a{{text-decoration:none!important}}
 .bar{{display:flex;gap:10px;width:100%;padding:2px}}
 .btn{{flex:1;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:14px;font-weight:600;cursor:pointer;border:1px solid #F4C6D5;background:#FFF0F5;color:#A35271;transition:background .15s,transform .1s;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}}
 .btn:hover{{background:#F4C6D5;transform:translateY(-1px)}}
@@ -261,9 +263,9 @@ svg{{display:inline-block;vertical-align:middle}}
 .btn.primary:hover{{background:#A35271}}
 </style></head><body>
 <div class="bar">
-  <button class="btn" onclick="window.parent.parent.location.search='?action=copy'">{SVG_COPY} คัดลอก</button>
-  <button class="btn" onclick="window.parent.parent.location.search='?action=share'">{SVG_SHARE} แชร์</button>
-  <button class="btn primary" onclick="window.parent.parent.location.search='?action=export'">{SVG_DL} ส่งออก</button>
+  <a href="?action=copy" target="_parent" class="btn">{SVG_COPY} คัดลอก</a>
+  <a href="?action=share" target="_parent" class="btn">{SVG_SHARE} แชร์</a>
+  <a href="?action=export" target="_parent" class="btn primary">{SVG_DL} ส่งออก</a>
 </div>
 </body></html>"""
 
@@ -273,19 +275,20 @@ def build_img_controls_html():
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{background:transparent}}
 svg{{display:inline-block;vertical-align:middle}}
+a{{text-decoration:none!important}}
 .row{{display:flex;justify-content:space-between;align-items:center;padding:10px 2px 2px}}
 .round-btn{{width:42px;height:42px;border-radius:50%;background:#FFFFFF;border:1px solid #F4C6D5;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(74,46,53,0.08);color:#4A2E35;transition:background .15s}}
 .round-btn:hover{{background:#F8D7E3}}
 </style></head><body>
 <div class="row">
-  <button class="round-btn" onclick="window.parent.parent.location.search='?action=back'">{SVG_BACK}</button>
-  <button class="round-btn" onclick="window.parent.parent.location.search='?action=maximize'">{SVG_ZOOM}</button>
+  <a href="?action=back" target="_parent" class="round-btn">{SVG_BACK}</a>
+  <a href="?action=maximize" target="_parent" class="round-btn">{SVG_ZOOM}</a>
 </div>
 </body></html>"""
 
 
 # =========================================================
-# PAGE 1 : UPLOAD (คงเดิม 100%)
+# PAGE 1 : UPLOAD
 # =========================================================
 if "processed_img" not in st.session_state or st.session_state.get("file_uploaded") is None:
 
@@ -324,7 +327,7 @@ if "processed_img" not in st.session_state or st.session_state.get("file_uploade
 
 
 # =========================================================
-# PAGE 2 : RESULT (🔴 เพิ่มตัวดักจับ Action Router ตรงจุดนี้)
+# PAGE 2 : RESULT (ดักจับสัญญาณและยิง Toast ตอบสนองได้สมบูรณ์)
 # =========================================================
 else:
     processed_img  = st.session_state["processed_img"]
@@ -337,7 +340,7 @@ else:
         and extracted_json["error"]
     )
 
-    # 🔥 ดักจับสัญญาณการกดปุ่มจากทุุกกล่อง Iframe เข้าสู่ระบบประมวลผลหลักของแอป
+    # 🕵️‍♂️ ดักจับสัญญาณลิงก์ย้อนกลับมาจาก Parent Window
     action = st.query_params.get("action", "")
 
     if action == "back":
@@ -347,23 +350,23 @@ else:
 
     elif action == "edit":
         st.query_params.clear()
-        st.toast("✏️ ระบบสแกน: เปิดสิทธิ์อนุญาตแก้ไขช่องฟิลด์ข้อมูลสำเร็จ")
+        st.toast("✏️ ระบบ: เปิดใช้งานโหมดแก้ไขฟิลด์ข้อมูลเสร็จสิ้น")
 
     elif action == "delete":
         st.query_params.clear()
-        st.toast("🗑️ ระบบสแกน: ดำเนินการลบแบบจำลองใบเสร็จรับเงินออกจากตาราง")
+        st.toast("🗑️ ระบบ: ดำเนินการลบข้อมูลใบเสร็จฉบับนี้เรียบร้อยแล้ว")
 
     elif action == "copy":
         st.query_params.clear()
-        st.toast("📋 ระบบสแกน: คัดลอกอักขระและราคาสินค้าลงใน Clipboard สำเร็จแล้ว")
+        st.toast("📋 ระบบ: คัดลอกราคารายการสินค้าลงใน Clipboard แล้ว")
 
     elif action == "share":
         st.query_params.clear()
-        st.toast("🔗 ระบบสแกน: สร้างลิงก์และช่องทางการแชร์โครงข่ายสำเร็จ")
+        st.toast("🔗 ระบบ: สร้างลิงก์ดึงข้อมูลใบเสร็จสำหรับส่งต่อสำเร็จ")
 
     elif action == "maximize":
         st.query_params.clear()
-        st.toast("🔍 ระบบสแกน: ขยายขนาดรูปภาพพรีวิวใบเสร็จแสดงผลเต็มหน้าจอ")
+        st.toast("🔍 ระบบ: ขยายขนาดพรีวิวรูปภาพใบเสร็จแบบเต็มจอ")
 
     elif action == "export":
         st.query_params.clear()
@@ -393,9 +396,7 @@ else:
     st.markdown('<div class="result-wrapper">', unsafe_allow_html=True)
     col_left, col_right = st.columns([1, 1])
 
-    # ════════════════════════════════════════
-    # LEFT (ฝั่งซ้าย - คงสไตล์เดิมไว้ 100%)
-    # ════════════════════════════════════════
+    # ── ฝั่งซ้าย (คงเดิมตามคุณ 100%) ──
     with col_left:
         st.markdown('<div class="img-card-wrap">', unsafe_allow_html=True)
         display_img = (
@@ -408,9 +409,7 @@ else:
 
         components.html(build_img_controls_html(), height=58, scrolling=False)
 
-    # ════════════════════════════════════════
-    # RIGHT (ฝั่งขวา - คงสไตล์เดิมไว้ 100%)
-    # ════════════════════════════════════════
+    # ── ฝั่งขวา (คงเดิมตามคุณ 100%) ──
     with col_right:
         if has_error:
             st.error(f"❌ {extracted_json['error']}")
