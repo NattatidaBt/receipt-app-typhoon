@@ -1,6 +1,5 @@
 import cv2
 import streamlit as st
-import re
 
 # =========================================================
 # PAGE CONFIG
@@ -25,241 +24,167 @@ from ocr_engine import (
 st.markdown("""
 <style>
 
-/* =========================================================
-   HIDE STREAMLIT DEFAULT UI
-========================================================= */
-header,
-footer,
+/* ── Hide Streamlit chrome ── */
+header, footer, #MainMenu,
 [data-testid="stToolbar"],
-[data-testid="stSidebar"],
-#MainMenu {
+[data-testid="stSidebar"] {
     visibility: hidden !important;
     display: none !important;
     height: 0 !important;
 }
 
-/* =========================================================
-   GLOBAL APP STYLE
-========================================================= */
+/* ── Global ── */
 .stApp {
     background-color: #FFF3F7 !important;
 }
-
 .block-container {
     max-width: 100% !important;
-    padding-top: 1rem !important;
-    padding-bottom: 1rem !important;
-    padding-left: 3rem !important;
-    padding-right: 3rem !important;
+    padding: 1.5rem 3rem !important;
 }
 
-/* =========================================================
-   HEADER BAR
-========================================================= */
+/* ── Header bar ── */
 .header-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 30px;
-    margin-bottom: 50px;
-    background-color: #FFFFFF;
-    border-radius: 20px;
-    box-shadow: 0 4px 20px rgba(74, 46, 53, 0.02);
+    padding: 14px 28px;
+    margin-bottom: 40px;
+    background: #FFFFFF;
+    border-radius: 18px;
+    box-shadow: 0 2px 12px rgba(74,46,53,0.06);
 }
-
 .logo-text {
     color: #4A2E35;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
-
-.lang-dropdown {
-    background-color: #C97D98;
+.lang-pill {
+    background: #C97D98;
     color: white;
-    padding: 8px 16px;
+    padding: 7px 16px;
     border-radius: 10px;
     font-size: 13px;
     font-weight: 500;
 }
 
-/* =========================================================
-   HERO SECTION
-========================================================= */
+/* ── Hero ── */
 .hero-title {
     text-align: center;
     color: #4A2E35;
-    font-size: 34px;
+    font-size: 32px;
     font-weight: 500;
-    margin-top: 30px;
-    margin-bottom: 10px;
+    margin: 20px 0 10px;
 }
-
 .hero-subtitle {
     text-align: center;
     color: #C29BA4;
     font-size: 15px;
-    margin-bottom: 45px;
+    margin-bottom: 36px;
 }
 
-/* =========================================================
-   FILE UPLOADER FRAME
-========================================================= */
-section[data-testid="stFileUploader"] {
-    max-width: 850px;
-    margin: auto;
-    position: relative;
-}
-
-section[data-testid="stFileUploader"] > div {
-    background-color: white !important;
+/* ── Upload zone wrapper ──
+   ทำให้ Streamlit uploader ดูเหมือน custom dropzone
+   โดยไม่ซ่อน element ใดเลย แค่ style ทับ ──  */
+div[data-testid="stFileUploaderDropzone"] {
+    background: white !important;
     border: 2px dashed #F4C6D5 !important;
-    border-radius: 30px !important;
-    min-height: 280px !important;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.03);
-}
-
-[data-testid="stFileUploaderDropzoneInstructions"],
-[data-testid="stFileUploaderDropzone"] svg,
-.stFileUploaderSection,
-small[data-testid="stWidgetLabel-help"] {
-    display: none !important;
-    visibility: hidden !important;
-}
-
-[data-testid="stFileUploaderDropzoneInputButton"],
-[data-testid="stFileUploaderFileSize"],
-[data-testid="stFileUploaderFileHeader"],
-[data-testid="stFileUploaderDeleteBtn"],
-[data-testid="stFileUploaderFileName"],
-[data-testid="stFileUploaderFile"] {
-    opacity: 0 !important;
-    position: absolute !important;
-    z-index: -1 !important;
-    height: 0 !important;
-    width: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-[data-testid="stFileUploaderDropzone"] {
-    background: transparent !important;
-    border: none !important;
-    min-height: 280px !important;
+    border-radius: 28px !important;
+    min-height: 260px !important;
     display: flex !important;
+    flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
+    transition: border-color 0.2s;
+}
+div[data-testid="stFileUploaderDropzone"]:hover {
+    border-color: #C97D98 !important;
 }
 
-/* =========================================================
-   CUSTOM UPLOAD CONTENT OVERLAY
-========================================================= */
-.upload-overlay {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 5;
-    pointer-events: none;
-    width: 100%;
+/* ซ่อนเฉพาะ SVG icon เดิมของ Streamlit (ก้อนเมฆ) */
+div[data-testid="stFileUploaderDropzone"] svg {
+    display: none !important;
 }
 
-.custom-upload-box {
-    text-align: center;
+/* ข้อความ drag & drop เดิม */
+div[data-testid="stFileUploaderDropzoneInstructions"] > div > span {
+    font-size: 15px !important;
+    color: #A3858C !important;
+}
+div[data-testid="stFileUploaderDropzoneInstructions"] > div > small {
+    color: #C29BA4 !important;
+    font-size: 12px !important;
 }
 
-.upload-icon {
-    font-size: 54px;
-    margin-bottom: 14px;
-    color: #4A2E35;
+/* ปุ่ม Browse ดั้งเดิม */
+div[data-testid="stFileUploaderDropzone"] button[data-testid="baseButton-secondary"] {
+    background: #F8D7E3 !important;
+    color: #A35271 !important;
+    border: none !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    padding: 8px 24px !important;
+    margin-top: 14px !important;
 }
 
-.upload-text {
-    color: #A3858C;
-    font-size: 15px;
-    font-weight: 400;
+/* จำกัดความกว้าง uploader */
+section[data-testid="stFileUploader"] {
+    max-width: 780px;
+    margin: 0 auto 32px;
 }
 
-/* =========================================================
-   RESULT PAGE WRAPPER
-========================================================= */
+/* ── Result wrapper ── */
 .result-wrapper {
     background: white;
-    border-radius: 28px;
-    padding: 28px;
-    max-width: 1400px;
-    margin: auto;
+    border-radius: 26px;
+    padding: 26px;
     border: 1px solid #F4E0E8;
-    box-shadow: 0 10px 35px rgba(0,0,0,0.03);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.03);
 }
-
 div[data-testid="stHorizontalBlock"] {
-    gap: 28px !important;
+    gap: 26px !important;
     align-items: flex-start !important;
 }
 
-/* =========================================================
-   LEFT COLUMN: IMAGE CARD
-========================================================= */
+/* ── Left: image card ── */
 .img-card-wrap {
     background: #FAFAFA;
-    border-radius: 20px;
-    padding: 16px;
+    border-radius: 18px;
+    padding: 14px;
     border: 1px solid #F4C6D5;
 }
 
-/* =========================================================
-   RIGHT COLUMN: DETAIL CARD
-========================================================= */
+/* ── Right: detail card ── */
 .detail-card {
     background: white;
-    border-radius: 20px;
+    border-radius: 18px;
     border: 1px solid #F4C6D5;
     overflow: hidden;
 }
-
-.detail-card-header {
+.dc-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px 14px;
+    padding: 14px 18px;
     border-bottom: 1px solid #F4E0E8;
 }
-
-.detail-card-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #4A2E35;
-}
-
-.header-icon-btns {
-    display: flex;
-    gap: 6px;
-}
-
-.header-icon-btn {
+.dc-title { font-size: 15px; font-weight: 700; color: #4A2E35; }
+.dc-icon-btn {
     background: transparent;
     border: none;
     cursor: pointer;
-    font-size: 18px;
-    padding: 4px 7px;
-    border-radius: 7px;
+    font-size: 17px;
+    padding: 3px 6px;
+    border-radius: 6px;
     color: #C97D98;
-    line-height: 1;
 }
+.dc-icon-btn:hover { background: #FFF0F5; }
 
-.header-icon-btn:hover {
-    background: #FFF0F5;
-}
+.dc-body { padding: 16px 18px; }
 
-.detail-card-body {
-    padding: 16px 20px;
-}
-
-/* Receipt type badge */
-.receipt-type-badge {
+.receipt-badge {
     display: inline-block;
     background: #FFF0F5;
     color: #A35271;
@@ -269,244 +194,138 @@ div[data-testid="stHorizontalBlock"] {
     padding: 4px 12px;
     margin-bottom: 16px;
 }
-
-/* Info rows */
-.info-rows {
-    margin-bottom: 4px;
-}
-
 .info-row {
     display: flex;
-    align-items: baseline;
     gap: 8px;
     font-size: 13px;
-    margin-bottom: 10px;
+    margin-bottom: 9px;
 }
+.info-lbl { color: #C29BA4; min-width: 112px; flex-shrink: 0; }
+.info-val { color: #4A2E35; font-weight: 600; }
 
-.info-label {
-    color: #C29BA4;
-    min-width: 110px;
-    flex-shrink: 0;
-}
+.divider { border: none; border-top: 1px solid #F4E0E8; margin: 14px 0; }
+.sec-lbl { font-size: 12px; color: #C29BA4; margin-bottom: 8px; }
 
-.info-value {
-    color: #4A2E35;
-    font-weight: 500;
-}
-
-/* Divider */
-.section-divider {
-    border: none;
-    border-top: 1px solid #F4E0E8;
-    margin: 14px 0;
-}
-
-/* Section label */
-.section-label {
-    font-size: 12px;
-    color: #C29BA4;
-    margin-bottom: 10px;
-}
-
-/* Items table */
-.items-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-    margin-bottom: 4px;
-}
-
-.items-table th {
-    color: #C29BA4;
-    font-weight: 400;
-    padding: 5px 6px 10px;
+.items-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.items-tbl th {
+    color: #C29BA4; font-weight: 400;
+    padding: 4px 6px 9px;
     border-bottom: 1px solid #F4E0E8;
     text-align: center;
 }
+.items-tbl th:nth-child(2) { text-align: left; }
+.items-tbl td { padding: 8px 6px; color: #4A2E35; text-align: center; }
+.items-tbl td:nth-child(2) { text-align: left; }
+.items-tbl .num { color: #C29BA4; font-size: 12px; }
 
-.items-table th:nth-child(2) {
-    text-align: left;
+.totals { padding-top: 2px; }
+.t-row {
+    display: flex; justify-content: space-between;
+    font-size: 13px; color: #A07A85; margin-bottom: 7px;
 }
+.t-row.grand { color: #4A2E35; font-weight: 700; font-size: 14px; margin-bottom: 0; }
 
-.items-table td {
-    padding: 9px 6px;
-    color: #4A2E35;
-    text-align: center;
-    vertical-align: middle;
-}
-
-.items-table td:nth-child(2) {
-    text-align: left;
-}
-
-.items-table .num-col {
-    color: #C29BA4;
-    font-size: 12px;
-}
-
-/* Totals */
-.totals-section {
-    padding-top: 4px;
-}
-
-.total-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    color: #A07A85;
-    margin-bottom: 8px;
-}
-
-.total-row.grand-total {
-    color: #4A2E35;
-    font-weight: 600;
-    font-size: 14px;
-    margin-bottom: 0;
-}
-
-/* Detail card footer */
-.detail-card-footer {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 20px 16px;
+.dc-footer {
+    display: flex; justify-content: flex-end; align-items: center;
+    gap: 8px; padding: 11px 18px 15px;
     border-top: 1px solid #F4E0E8;
 }
-
-.footer-icon-btn {
-    background: white;
-    border: 1px solid #F4C6D5;
-    color: #A35271;
-    border-radius: 10px;
-    width: 38px;
-    height: 38px;
-    font-size: 16px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+.f-icon-btn {
+    background: white; border: 1px solid #F4C6D5;
+    color: #A35271; border-radius: 10px;
+    width: 36px; height: 36px; font-size: 15px;
+    cursor: pointer; display: inline-flex;
+    align-items: center; justify-content: center;
 }
+.f-icon-btn:hover { background: #FFF0F5; }
 
-.footer-icon-btn:hover {
-    background: #FFF0F5;
-}
-
-.export-btn {
-    background: #F8D7E3;
-    color: #A35271;
-    border: none;
-    border-radius: 10px;
-    padding: 8px 18px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    height: 38px;
-}
-
-.export-btn:hover {
-    background: #F0C0D5;
-}
-
-/* =========================================================
-   BACK BUTTON (ใต้รูปฝั่งซ้าย)
-========================================================= */
-div.stButton > button {
-    background-color: #F8D7E3 !important;
+/* Export button ใช้ st.button จึง override ที่นี่ */
+div[data-testid="stButton"] > button {
+    background: #F8D7E3 !important;
     color: #A35271 !important;
-    border-radius: 12px !important;
     border: none !important;
-    font-weight: bold !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    height: 42px !important;
+    width: 100% !important;
+    margin-top: 4px !important;
+}
+div[data-testid="stButton"] > button:hover {
+    background: #F0C0D5 !important;
 }
 
-.back-btn-wrap div.stButton > button {
+/* Back button เล็กกว่า */
+.back-wrap div[data-testid="stButton"] > button {
     width: 42px !important;
     height: 42px !important;
-    padding: 0 !important;
     font-size: 18px !important;
-}
-
-.export-submit-btn div.stButton > button {
-    width: 100% !important;
-    height: 42px !important;
-    font-size: 14px !important;
+    padding: 0 !important;
+    margin-top: 10px !important;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# HEADER COMPONENT
+# HEADER
 # =========================================================
 st.markdown("""
 <div class="header-bar">
-    <div class="logo-text">
-        📄 RecAipt
-    </div>
-    <div class="lang-dropdown">
-        English ▾
-    </div>
+    <div class="logo-text">📄 RecAipt</div>
+    <div class="lang-pill">English ▾</div>
 </div>
 """, unsafe_allow_html=True)
 
 
+# =========================================================
+# HELPERS
+# =========================================================
 def reset_app():
     st.session_state.clear()
-
 
 def safe_float(value, default=0.0):
     try:
         return float(str(value).replace(",", "").strip())
-    except:
+    except Exception:
         return default
-
 
 def safe_int(value, default=1):
     try:
         return int(float(str(value).replace(",", "").strip()))
-    except:
+    except Exception:
         return default
 
 
 # =========================================================
-# PAGE 1 : UPLOAD PAGE
+# PAGE 1 : UPLOAD
 # =========================================================
 if "processed_img" not in st.session_state or st.session_state.get("file_uploaded") is None:
 
-    st.markdown("<div class='hero-title'>Receipt scanning and data collection tools</div>", unsafe_allow_html=True)
+    st.markdown("<div class='hero-title'>Receipt scanning and data collection tools</div>",
+                unsafe_allow_html=True)
     st.markdown("<div class='hero-subtitle'>Upload an image or PDF of your receipt to store it using OCR</div>",
                 unsafe_allow_html=True)
 
-    uploaded_file = st.file_uploader("", type=["jpg", "jpeg", "png", "pdf"], key="uploader_widget")
+    uploaded_file = st.file_uploader(
+        "",
+        type=["jpg", "jpeg", "png", "pdf"],
+        key="uploader_widget",
+        label_visibility="collapsed",
+    )
 
-    st.markdown("""
-    <div class="upload-overlay">
-        <div class="custom-upload-box">
-            <div class="upload-icon">📄</div>
-            <div class="upload-text">Choose or paste a file here (image or PDF)</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # -----------------------------------------------------
-    # PIPELINE EXECUTION
-    # -----------------------------------------------------
     if uploaded_file is not None:
         st.session_state["file_uploaded"] = uploaded_file
         file_bytes = uploaded_file.read()
-        file_name = uploaded_file.name
+        file_name  = uploaded_file.name
 
         with st.spinner("⏳ Processing image..."):
             img = load_image_or_pdf(file_bytes, file_name)
             if img is None:
                 st.error("❌ Unsupported file")
                 st.stop()
-
-            deskewed_img = deskew_image(img)
-            processed = process_method_4_sharpening(deskewed_img)
+            deskewed  = deskew_image(img)
+            processed = process_method_4_sharpening(deskewed)
             st.session_state["processed_img"] = processed
 
         with st.spinner("⚡ Running OCR..."):
@@ -522,8 +341,9 @@ if "processed_img" not in st.session_state or st.session_state.get("file_uploade
                 st.session_state["extracted_json"] = extracted_json
             st.rerun()
 
+
 # =========================================================
-# PAGE 2 : RESULT PAGE
+# PAGE 2 : RESULT
 # =========================================================
 else:
     processed_img  = st.session_state["processed_img"]
@@ -531,16 +351,12 @@ else:
     extracted_json = st.session_state["extracted_json"]
 
     st.markdown('<div class="result-wrapper">', unsafe_allow_html=True)
-
     col_left, col_right = st.columns([1, 1])
 
-    # ----------------------------------------------------------
-    # LEFT COLUMN: Receipt Image
-    # ----------------------------------------------------------
+    # ── LEFT ──────────────────────────────────────────────
     with col_left:
         st.markdown('<div class="img-card-wrap">', unsafe_allow_html=True)
 
-        # แสดงรูปใบเสร็จ
         if len(processed_img.shape) == 2:
             display_img = cv2.cvtColor(processed_img, cv2.COLOR_GRAY2RGB)
         else:
@@ -548,35 +364,30 @@ else:
 
         st.image(display_img, use_container_width=True)
 
-        # Raw OCR expander
         with st.expander("📄 Raw OCR Text"):
             st.code(raw_text, language="text")
 
-        # Back button
-        st.markdown('<div class="back-btn-wrap">', unsafe_allow_html=True)
-        st.button("←", key="back_to_upload", on_click=reset_app)
+        st.markdown('<div class="back-wrap">', unsafe_allow_html=True)
+        st.button("←", key="back_btn", on_click=reset_app)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)  # img-card-wrap
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    # ----------------------------------------------------------
-    # RIGHT COLUMN: Receipt Details
-    # ----------------------------------------------------------
+    # ── RIGHT ─────────────────────────────────────────────
     with col_right:
         if "error" in extracted_json:
             st.error(extracted_json["error"])
         else:
-            # ── ดึงข้อมูลจาก JSON ──
-            merchant      = extracted_json.get("store_name", "—") or "—"
-            receipt_no    = extracted_json.get("receipt_no", "—") or "—"
-            date_val      = extracted_json.get("date", "—") or "—"
-            receipt_type  = extracted_json.get("receipt_type", "ใบกำกับภาษีอย่างย่อ") or "ใบกำกับภาษีอย่างย่อ"
-            items_list    = extracted_json.get("items", []) or []
-            subtotal_val  = safe_float(extracted_json.get("subtotal", 0))
-            vat_val       = safe_float(extracted_json.get("vat", 0))
-            total_val     = safe_float(extracted_json.get("total", 0))
+            merchant     = extracted_json.get("store_name", "—") or "—"
+            receipt_no   = extracted_json.get("receipt_no",  "—") or "—"
+            date_val     = extracted_json.get("date",        "—") or "—"
+            receipt_type = extracted_json.get("receipt_type", "ใบกำกับภาษีอย่างย่อ") or "ใบกำกับภาษีอย่างย่อ"
+            items_list   = extracted_json.get("items", []) or []
+            subtotal_val = safe_float(extracted_json.get("subtotal", 0))
+            vat_val      = safe_float(extracted_json.get("vat",      0))
+            total_val    = safe_float(extracted_json.get("total",    0))
 
-            # ── สร้าง HTML ของตารางสินค้า ──
+            # สร้าง rows ตาราง
             rows_html = ""
             for idx, item in enumerate(items_list):
                 name  = item.get("name", "")
@@ -585,95 +396,96 @@ else:
                 amt   = qty * price
                 rows_html += f"""
                 <tr>
-                    <td class="num-col">{idx + 1}</td>
+                    <td class="num">{idx + 1}</td>
                     <td>{name}</td>
                     <td>{qty}</td>
                     <td>{price:,.2f}</td>
                     <td style="text-align:right">{amt:,.2f}</td>
                 </tr>"""
 
-            # ── แสดง Detail Card (HTML ทั้งก้อน) ──
+            if not rows_html:
+                rows_html = '<tr><td colspan="5" style="text-align:center;color:#C29BA4;padding:16px 0">ไม่พบรายการสินค้า</td></tr>'
+
+            subtotal_row = (f'<div class="t-row"><span>ยอดก่อน VAT :</span>'
+                            f'<span>{subtotal_val:,.2f} บาท</span></div>') if subtotal_val else ""
+            vat_row      = (f'<div class="t-row"><span>VAT 7% :</span>'
+                            f'<span>{vat_val:,.2f} บาท</span></div>') if vat_val else ""
+
             st.markdown(f"""
             <div class="detail-card">
 
-                <div class="detail-card-header">
-                    <span class="detail-card-title">รายละเอียดใบเสร็จ</span>
-                    <div class="header-icon-btns">
-                        <button class="header-icon-btn" title="แก้ไข">✏️</button>
-                        <button class="header-icon-btn" title="ลบ">🗑️</button>
-                    </div>
+              <div class="dc-header">
+                <span class="dc-title">รายละเอียดใบเสร็จ</span>
+                <div>
+                  <button class="dc-icon-btn" title="แก้ไข">✏️</button>
+                  <button class="dc-icon-btn" title="ลบ">🗑️</button>
+                </div>
+              </div>
+
+              <div class="dc-body">
+                <span class="receipt-badge">{receipt_type}</span>
+
+                <div class="info-row">
+                  <span class="info-lbl">ร้านค้า / ผู้ขาย :</span>
+                  <span class="info-val">{merchant}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-lbl">เลขที่ใบเสร็จ :</span>
+                  <span class="info-val">{receipt_no}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-lbl">วันที่ :</span>
+                  <span class="info-val">{date_val}</span>
                 </div>
 
-                <div class="detail-card-body">
-                    <span class="receipt-type-badge">{receipt_type}</span>
+                <hr class="divider">
+                <div class="sec-lbl">รายการสินค้า</div>
 
-                    <div class="info-rows">
-                        <div class="info-row">
-                            <span class="info-label">ร้านค้า / ผู้ขาย :</span>
-                            <span class="info-value">{merchant}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">เลขที่ใบเสร็จ :</span>
-                            <span class="info-value">{receipt_no}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">วันที่ :</span>
-                            <span class="info-value">{date_val}</span>
-                        </div>
-                    </div>
+                <table class="items-tbl">
+                  <thead>
+                    <tr>
+                      <th style="width:32px">ลำดับ</th>
+                      <th>รายการ</th>
+                      <th style="width:50px">จำนวน</th>
+                      <th style="width:60px">ราคา</th>
+                      <th style="width:60px;text-align:right">รวม</th>
+                    </tr>
+                  </thead>
+                  <tbody>{rows_html}</tbody>
+                </table>
 
-                    <hr class="section-divider">
-                    <div class="section-label">รายการสินค้า</div>
+                <hr class="divider">
 
-                    <table class="items-table">
-                        <thead>
-                            <tr>
-                                <th style="width:36px">ลำดับ</th>
-                                <th>รายการ</th>
-                                <th style="width:52px">จำนวน</th>
-                                <th style="width:64px">ราคา</th>
-                                <th style="width:64px;text-align:right">รวม</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {rows_html if rows_html else '<tr><td colspan="5" style="text-align:center;color:#C29BA4;padding:16px">ไม่พบรายการสินค้า</td></tr>'}
-                        </tbody>
-                    </table>
-
-                    <hr class="section-divider">
-
-                    <div class="totals-section">
-                        {f'<div class="total-row"><span>ยอดก่อน VAT :</span><span>{subtotal_val:,.2f} บาท</span></div>' if subtotal_val else ''}
-                        {f'<div class="total-row"><span>VAT 7% :</span><span>{vat_val:,.2f} บาท</span></div>' if vat_val else ''}
-                        <div class="total-row grand-total">
-                            <span>ยอดรวม :</span>
-                            <span>{total_val:,.2f} บาท</span>
-                        </div>
-                    </div>
+                <div class="totals">
+                  {subtotal_row}
+                  {vat_row}
+                  <div class="t-row grand">
+                    <span>ยอดรวม :</span>
+                    <span>{total_val:,.2f} บาท</span>
+                  </div>
                 </div>
+              </div>
 
-                <div class="detail-card-footer">
-                    <button class="footer-icon-btn" title="คัดลอก">📋</button>
-                    <button class="footer-icon-btn" title="แชร์">↑</button>
-                </div>
+              <div class="dc-footer">
+                <button class="f-icon-btn" title="คัดลอก">📋</button>
+                <button class="f-icon-btn" title="แชร์">↑</button>
+              </div>
 
             </div>
             """, unsafe_allow_html=True)
 
-            # ── ปุ่ม ส่งออก (ต้องใช้ Streamlit เพื่อ trigger Python) ──
-            st.markdown('<div class="export-submit-btn">', unsafe_allow_html=True)
-            if st.button("📤 ส่งออก", key="export_btn", use_container_width=True):
+            # ปุ่ม ส่งออก ต้องใช้ Streamlit widget เพื่อ trigger Python
+            if st.button("📤  ส่งออก", key="export_btn"):
+                export_items = [
+                    {
+                        "name":       it.get("name", ""),
+                        "qty":        safe_int(it.get("qty", 1)),
+                        "unit_price": safe_float(it.get("unit_price", 0)),
+                        "amount":     safe_int(it.get("qty", 1)) * safe_float(it.get("unit_price", 0)),
+                    }
+                    for it in items_list
+                ]
                 st.success("🎉 บันทึกข้อมูลเรียบร้อยแล้ว")
-                export_items = []
-                for item in items_list:
-                    qty   = safe_int(item.get("qty", 1))
-                    price = safe_float(item.get("unit_price", 0))
-                    export_items.append({
-                        "name":       item.get("name", ""),
-                        "qty":        qty,
-                        "unit_price": price,
-                        "amount":     qty * price,
-                    })
                 st.json({
                     "store_name": merchant,
                     "receipt_no": receipt_no,
@@ -683,6 +495,5 @@ else:
                     "vat":        vat_val,
                     "total":      total_val,
                 })
-            st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('</div>', unsafe_allow_html=True)  # result-wrapper
+    st.markdown('</div>', unsafe_allow_html=True)
