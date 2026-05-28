@@ -9,7 +9,6 @@ from ocr_engine import (
     run_typhoon_ocr,
 )
 
-
 st.set_page_config(page_title="RecAipt - Typhoon End-to-End", layout="wide")
 
 st.title("📄 ระบบอ่านและสกัดข้อมูลจากใบเสร็จรับเงินอัตโนมัติ")
@@ -17,6 +16,45 @@ st.caption(
     "Automated Receipt Information Extraction System - "
     "ขอบเขตสถาปัตยกรรมโมเดลร่วมค่าย Typhoon End-to-End"
 )
+
+# 🎨 แทรกสไตล์ CSS ปรับแต่งโครงสร้างหน้าจอและกล่องข้อมูลให้โค้งมนสไตล์สีชมพูพาสเทล
+st.markdown("""
+    <style>
+    /* 1. ปรับแต่งกล่องพื้นที่สำหรับลากและวางไฟล์อัปโหลดใบเสร็จ */
+    .stFileUploader {
+        border: 2px dashed #D47A9A !important;
+        border-radius: 15px !important;
+        background-color: #FCE4EC !important;
+    }
+    /* 2. ปรับแต่งฟอร์มกล่องข้อมูลฝั่งขวาให้ออกโทนขาวคลีน โค้งมน และมีเงามิติบางๆ */
+    div[data-testid="stForm"] {
+        border: 1px solid #F8BBD0 !important;
+        border-radius: 20px !important;
+        background-color: #FFFFFF !important;
+        box-shadow: 0 4px 12px rgba(212, 122, 154, 0.12);
+        padding: 2.5rem !important;
+    }
+    /* 3. ปรับแต่งปุ่มกดบันทึก (Form Submit Button) ให้เป็นบล็อกสีชมพูเด่นชัดน่าใช้งาน */
+    button[kind="formSubmit"] {
+        background-color: #D47A9A !important;
+        color: white !important;
+        border-radius: 10px !important;
+        border: none !important;
+        width: 100% !important;
+        font-weight: bold !important;
+        font-size: 16px !important;
+        padding: 0.6rem 0 !important;
+        transition: background-color 0.3s ease, transform 0.1s ease;
+    }
+    button[kind="formSubmit"]:hover {
+        background-color: #C26383 !important;
+        color: white !important;
+    }
+    button[kind="formSubmit"]:active {
+        transform: scale(0.98);
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 uploaded_file = st.file_uploader(
     "เลือกไฟล์รูปภาพหรือไฟล์ PDF ใบเสร็จของคุณนำเข้า",
@@ -28,7 +66,7 @@ if uploaded_file is not None:
     file_name = uploaded_file.name
 
     with st.spinner(
-        "⏳ ขั้นตอนที่ 1: กำลังรันกระบวนการหมุนแก้องศาเอียงและใช้ฟิลเตอร์เพิ่มความคมชัด (Sharpen)..."
+            "⏳ ขั้นตอนที่ 1: กำลังรันกระบวนการหมุนแก้องศาเอียงและใช้ฟิลเตอร์เพิ่มความคมชัด (Sharpen)..."
     ):
         img = load_image_or_pdf(file_bytes, file_name)
         if img is None:
@@ -96,19 +134,37 @@ if uploaded_file is not None:
                                 value=item.get("name", ""),
                                 key=f"n_{idx}",
                             )
+
+                        # 🛡️ ป้องกันบั๊ก: จัดการการแปลงข้อมูลจำนวนชิ้น (qty) ให้ปลอดภัย
+                        raw_qty = item.get("qty", 1)
+                        if isinstance(raw_qty, str):
+                            raw_qty = re.sub(r"[^\d.]", "", raw_qty)  # ตัดตัวอักษรแปลกปลอมออก
+                        try:
+                            default_qty = int(float(raw_qty)) if raw_qty else 1
+                        except:
+                            default_qty = 1
+
                         with c2:
                             i_qty = st.number_input(
                                 "จำนวนชิ้น",
-                                value=int(item.get("qty", 1)) if item.get("qty") else 1,
+                                value=default_qty,
                                 step=1,
                                 key=f"q_{idx}",
                             )
+
+                        # 🛡️ ป้องกันบั๊ก: จัดการล้างเครื่องหมายจุลภาค คอมมา ออกจากราคาสินค้าก่อนแปลงเป็น float
+                        raw_price = item.get("unit_price", 0.0)
+                        if isinstance(raw_price, str):
+                            raw_price = raw_price.replace(",", "")
+                        try:
+                            default_price = float(raw_price) if raw_price else 0.0
+                        except:
+                            default_price = 0.0
+
                         with c3:
                             i_price = st.number_input(
                                 "ราคา/ชิ้น",
-                                value=float(item.get("unit_price", 0.0))
-                                if item.get("unit_price")
-                                else 0.0,
+                                value=default_price,
                                 step=0.5,
                                 key=f"p_{idx}",
                             )
@@ -122,27 +178,47 @@ if uploaded_file is not None:
                         )
 
                     st.write("---")
+
+                    # 🛡️ ล้างเครื่องหมายคอมมาออกจากข้อมูลสรุปยอดเงินรวมก่อนดึงมาแสดงผล
+                    raw_subtotal = extracted_json.get("subtotal", 0.0)
+                    if isinstance(raw_subtotal, str): raw_subtotal = raw_subtotal.replace(",", "")
+                    try:
+                        default_subtotal = float(raw_subtotal) if raw_subtotal else 0.0
+                    except:
+                        default_subtotal = 0.0
+
                     subtotal = st.number_input(
                         "มูลค่ายอดเงินรวมก่อนคิดภาษี (Subtotal)",
-                        value=float(extracted_json.get("subtotal", 0.0))
-                        if extracted_json.get("subtotal")
-                        else 0.0,
+                        value=default_subtotal,
                         step=0.5,
                     )
+
+                    raw_vat = extracted_json.get("vat", 0.0)
+                    if isinstance(raw_vat, str): raw_vat = raw_vat.replace(",", "")
+                    try:
+                        default_vat = float(raw_vat) if raw_vat else 0.0
+                    except:
+                        default_vat = 0.0
+
                     vat = st.number_input(
                         "จำนวนยอดมูลค่าภาษีสะสม (VAT)",
-                        value=float(extracted_json.get("vat", 0.0))
-                        if extracted_json.get("vat")
-                        else 0.0,
+                        value=default_vat,
                         step=0.1,
                     )
+
+                    raw_total = extracted_json.get("total", 0.0)
+                    if isinstance(raw_total, str): raw_total = raw_total.replace(",", "")
+                    try:
+                        default_total = float(raw_total) if raw_total else 0.0
+                    except:
+                        default_total = 0.0
+
                     total = st.number_input(
                         "ยอดสุทธิชำระเงินจริงทั้งสิ้น (Grand Total)",
-                        value=float(extracted_json.get("total", 0.0))
-                        if extracted_json.get("total")
-                        else 0.0,
+                        value=default_total,
                         step=0.5,
                     )
+
                     pay_method = st.text_input(
                         "ช่องทางการจ่ายชำระเงิน (Payment Method)",
                         value=extracted_json.get("payment_method", ""),
