@@ -2,14 +2,6 @@ import cv2
 import streamlit as st
 import re
 
-from llm_engine import call_typhoon_llm
-from ocr_engine import (
-    deskew_image,
-    load_image_or_pdf,
-    process_method_4_sharpening,
-    run_typhoon_ocr,
-)
-
 # =========================================================
 # PAGE CONFIG
 # =========================================================
@@ -19,8 +11,16 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+from llm_engine import call_typhoon_llm
+from ocr_engine import (
+    deskew_image,
+    load_image_or_pdf,
+    process_method_4_sharpening,
+    run_typhoon_ocr,
+)
+
 # =========================================================
-# CUSTOM CSS (RecAipt Pastel Pink Theme)
+# CUSTOM CSS (RecAipt Exact Matching Layout)
 # =========================================================
 st.markdown("""
 <style>
@@ -28,7 +28,6 @@ st.markdown("""
 /* =========================================================
    HIDE STREAMLIT DEFAULT UI
 ========================================================= */
-
 header,
 footer,
 [data-testid="stToolbar"],
@@ -40,38 +39,12 @@ footer,
 }
 
 /* =========================================================
-   🔥 บังคับซ่อนเศษปุ่ม Upload และคำอธิบายดั้งเดิมออกไปอย่างถาวร 100%
-========================================================= */
-
-[data-testid="stFileUploaderDropzoneInputButton"],
-[data-testid="stFileUploaderFileSize"],
-[data-testid="stFileUploaderFileHeader"],
-[data-testid="stFileUploaderDeleteBtn"],
-[data-testid="stFileUploaderFileName"],
-[data-testid="stFileUploaderFile"],
-[data-testid="stFileUploaderDropzoneInstructions"],
-small[data-testid="stWidgetLabel-help"],
-.stFileUploaderSection {
-    display: none !important;
-}
-
-/* ปลดล็อกทำลายไอคอนรูปก้อนเมฆอัปโหลดดั้งเดิมที่แอบซ้อนอยู่หลังใบเสร็จ */
-[data-testid="stFileUploaderDropzone"] svg {
-    display: none !important;
-}
-div[data-testid="stFileUploaderDropzone"] > div {
-    display: none !important;
-}
-
-/* =========================================================
    GLOBAL APP STYLE
 ========================================================= */
-
 .stApp {
     background-color: #FFF3F7 !important;
 }
 
-/* ปรับสมดุลระยะสัดส่วนขอบหน้าจอหลัก */
 .block-container {
     max-width: 100% !important;
     padding-top: 1rem !important;
@@ -83,7 +56,6 @@ div[data-testid="stFileUploaderDropzone"] > div {
 /* =========================================================
    HEADER BAR
 ========================================================= */
-
 .header-bar {
     display: flex;
     justify-content: space-between;
@@ -116,7 +88,6 @@ div[data-testid="stFileUploaderDropzone"] > div {
 /* =========================================================
    HERO SECTION
 ========================================================= */
-
 .hero-title {
     text-align: center;
     color: #4A2E35;
@@ -134,38 +105,67 @@ div[data-testid="stFileUploaderDropzone"] > div {
 }
 
 /* =========================================================
-   FILE UPLOADER
+   FILE UPLOADER FRAME (แก้ไขปัญหากรอบหลุดระนาบ)
 ========================================================= */
-
 section[data-testid="stFileUploader"] {
     max-width: 850px;
     margin: auto;
+    position: relative;
 }
 
 section[data-testid="stFileUploader"] > div {
     background-color: white !important;
     border: 2px dashed #F4C6D5 !important;
     border-radius: 30px !important;
-    min-height: 320px !important;
-    padding: 100px 20px !important;
+    min-height: 280px !important;
     box-shadow: 0 12px 40px rgba(0,0,0,0.03);
+}
+
+/* บังคับล้างไอคอนก้อนเมฆและข้อความคำแนะนำดั้งเดิมของระบบ */
+[data-testid="stFileUploaderDropzoneInstructions"],
+[data-testid="stFileUploaderDropzone"] svg,
+.stFileUploaderSection,
+small[data-testid="stWidgetLabel-help"] {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* 🔥 ซ่อนปุ่ม Upload ดั้งเดิมและข้อความระบุขนาดไฟล์อย่างปลอดภัยโดยไม่ทำลายโครงสร้างความสูง */
+[data-testid="stFileUploaderDropzoneInputButton"],
+[data-testid="stFileUploaderFileSize"],
+[data-testid="stFileUploaderFileHeader"],
+[data-testid="stFileUploaderDeleteBtn"],
+[data-testid="stFileUploaderFileName"],
+[data-testid="stFileUploaderFile"] {
+    opacity: 0 !important;
+    position: absolute !important;
+    z-index: -1 !important;
+    height: 0 !important;
+    width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 [data-testid="stFileUploaderDropzone"] {
     background: transparent !important;
     border: none !important;
+    min-height: 280px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 /* =========================================================
-   CUSTOM UPLOAD CONTENT (หน้ากากมินิมอลสีชมพู)
+   CUSTOM UPLOAD CONTENT Overlay (จัดระเบียบระนาบกึ่งกลางกล่อง)
 ========================================================= */
-
 .upload-overlay {
-    position: relative;
-    margin-top: -215px;
-    margin-bottom: 75px;
-    z-index: 10;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
     pointer-events: none;
+    width: 100%;
 }
 
 .custom-upload-box {
@@ -174,18 +174,19 @@ section[data-testid="stFileUploader"] > div {
 
 .upload-icon {
     font-size: 54px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
+    color: #4A2E35;
 }
 
 .upload-text {
     color: #A3858C;
     font-size: 15px;
+    font-weight: 400;
 }
 
 /* =========================================================
-   RESULT WRAPPER & CONTAINERS
+   RESULT CONTAINER & LAYOUT
 ========================================================= */
-
 .result-wrapper {
     background: white;
     border-radius: 32px;
@@ -210,7 +211,6 @@ div[data-testid="stHorizontalBlock"] {
 /* =========================================================
    INPUT ELEMENTS
 ========================================================= */
-
 .stTextInput input,
 .stNumberInput input {
     background-color: white !important;
@@ -237,7 +237,6 @@ div[data-testid="stForm"] {
 /* =========================================================
    BUTTON ACTIONS
 ========================================================= */
-
 button[kind="formSubmit"] {
     background-color: #F8D7E3 !important;
     color: #A35271 !important;
@@ -269,7 +268,7 @@ div.stButton > button {
 """, unsafe_allow_html=True)
 
 # =========================================================
-# HEADER
+# HEADER COMPONENT
 # =========================================================
 st.markdown("""
 <div class="header-bar">
@@ -283,16 +282,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# =========================================================
-# RESET FUNCTION
-# =========================================================
 def reset_app():
     st.session_state.clear()
 
 
-# =========================================================
-# SAFE FLOAT
-# =========================================================
 def safe_float(value, default=0.0):
     try:
         return float(str(value).replace(",", "").strip())
@@ -300,9 +293,6 @@ def safe_float(value, default=0.0):
         return default
 
 
-# =========================================================
-# SAFE INT
-# =========================================================
 def safe_int(value, default=1):
     try:
         return int(float(str(value).replace(",", "").strip()))
@@ -319,8 +309,10 @@ if "processed_img" not in st.session_state or st.session_state.get("file_uploade
     st.markdown("<div class='hero-subtitle'>Upload an image or PDF of your receipt to store it using OCR</div>",
                 unsafe_allow_html=True)
 
+    # วางคอนเทนเนอร์ Uploader หลัก
     uploaded_file = st.file_uploader("", type=["jpg", "jpeg", "png", "pdf"], key="uploader_widget")
 
+    # ใช้ระบบ Absolute Position ประกบหน้ากากเข้ากึ่งกลางเฟรมอย่างแม่นยำร้อยเปอร์เซ็นต์
     st.markdown("""
     <div class="upload-overlay">
         <div class="custom-upload-box">
@@ -330,9 +322,9 @@ if "processed_img" not in st.session_state or st.session_state.get("file_uploade
     </div>
     """, unsafe_allow_html=True)
 
-    # =====================================================
-    # OCR PIPELINE
-    # =====================================================
+    # -----------------------------------------------------
+    # PIPELINE EXECUTION
+    # -----------------------------------------------------
     if uploaded_file is not None:
         st.session_state["file_uploaded"] = uploaded_file
         file_bytes = uploaded_file.read()
@@ -374,9 +366,6 @@ else:
     st.markdown('<div class="result-wrapper">', unsafe_allow_html=True)
     col_left, col_right = st.columns([1, 1])
 
-    # -----------------------------------------------------
-    # ฝั่งซ้าย: รูปภาพใบเสร็จอ้างอิง
-    # -----------------------------------------------------
     with col_left:
         if len(processed_img.shape) == 2:
             display_img = cv2.cvtColor(processed_img, cv2.COLOR_GRAY2RGB)
@@ -388,17 +377,10 @@ else:
         with st.expander("📄 Raw OCR Text"):
             st.code(raw_text, language="text")
 
-    # -----------------------------------------------------
-    # ฝั่งขวา: รายละเอียดแบบฟอร์มยืนยันข้อมูลดิจิทัล
-    # -----------------------------------------------------
     with col_right:
         st.markdown('<div class="receipt-card">', unsafe_allow_html=True)
-
-        st.markdown("""
-        <h3 style="text-align:center; color:#4A2E35; margin-bottom:25px;">
-            รายละเอียดใบเสร็จ
-        </h3>
-        """, unsafe_allow_html=True)
+        st.markdown('<h3 style="text-align:center; color:#4A2E35; margin-bottom:25px;">รายละเอียดใบเสร็จ</h3>',
+                    unsafe_allow_html=True)
 
         if "error" in extracted_json:
             st.error(extracted_json["error"])
@@ -409,13 +391,11 @@ else:
                 date_val = st.text_input("📅 วันที่", value=extracted_json.get("date", ""))
 
                 st.markdown("---")
-
                 items_list = extracted_json.get("items", []) or []
                 edited_items = []
 
                 for idx, item in enumerate(items_list):
                     c1, c2, c3 = st.columns([5, 2, 3])
-
                     with c1:
                         i_name = st.text_input(f"รายการ #{idx + 1}", value=item.get("name", ""), key=f"n_{idx}")
 
@@ -437,7 +417,6 @@ else:
                     })
 
                 st.markdown("---")
-
                 subtotal_value = safe_float(extracted_json.get("subtotal", 0))
                 subtotal = st.number_input("ยอดรวมก่อนภาษี", value=subtotal_value, step=0.5)
 
