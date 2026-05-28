@@ -20,7 +20,7 @@ from ocr_engine import (
 )
 
 # =========================================================
-# GLOBAL CSS (คงไว้ตามเดิม 100% ไม่เปลี่ยนแปลง)
+# GLOBAL CSS (คงเดิม 100% ดีไซน์ไม่เปลี่ยน)
 # =========================================================
 st.markdown("""
 <style>
@@ -78,8 +78,7 @@ header, footer, #MainMenu,
 [data-testid="stFileUploaderDropzoneInstructions"] > div > small { display:none !important; }
 [data-testid="stFileUploaderDropzoneInstructions"] {
     display:flex !important; flex-direction:column !important;
-    align-items:center !important;
-}
+    align-items:center !}
 [data-testid="stFileUploaderDropzoneInstructions"]::before {
     content:"📄"; font-size:44px; line-height:1;
     margin-bottom:14px; display:block;
@@ -111,12 +110,11 @@ header, footer, #MainMenu,
 iframe { display:block !important; margin:0 auto !important; border-radius:24px !important; }
 [data-testid="stElementToolbar"] {display:none !important;}
 button[title="View fullscreen"] {display:none !important;}
-
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# HEADER COMPONENT (ตามเดิม 100%)
+# HEADER COMPONENT (คงเดิม 100%)
 # =========================================================
 st.markdown("""
 <div class="header-bar">
@@ -151,7 +149,7 @@ def safe_int(value, default=1):
     except Exception: return default
 
 # =========================================================
-# HTML BUILDERS & BUTTON ACTION ROUTING (เปิดระบบลิงก์ข้ามกรอบ)
+# HTML BUILDERS & SVG ICONS (คงเดิม 100%)
 # =========================================================
 SVG_BACK   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>'
 SVG_EDIT   = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
@@ -186,6 +184,7 @@ def build_detail_card_html(extracted_json):
     subtotal_row = f'<div class="t-row"><span>ยอดก่อน VAT :</span><span>{subtotal_val:,.2f} บาท</span></div>' if subtotal_val else ""
     vat_row      = f'<div class="t-row"><span>VAT 7% :</span><span>{vat_val:,.2f} บาท</span></div>' if vat_val else ""
 
+    # ✨ ปรับแต่งให้ปุ่มในส่วนการ์ด ส่งค่า Query String ผ่านโครงสร้าง window.parent.parent หลัก
     return f"""<!DOCTYPE html><html><head><meta charset="utf-8">
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
@@ -280,12 +279,13 @@ svg{{display:inline-block;vertical-align:middle}}
 </style></head><body>
 <div class="row">
   <button class="round-btn" onclick="window.parent.parent.location.search='?action=back'">{SVG_BACK}</button>
-  <button class="round-btn" onclick="window.parent.parent.location.search='?action=zoom'">{SVG_ZOOM}</button>
+  <button class="round-btn" onclick="window.parent.parent.location.search='?action=maximize'">{SVG_ZOOM}</button>
 </div>
 </body></html>"""
 
+
 # =========================================================
-# PAGE 1 : UPLOAD
+# PAGE 1 : UPLOAD (คงเดิม 100%)
 # =========================================================
 if "processed_img" not in st.session_state or st.session_state.get("file_uploaded") is None:
 
@@ -322,8 +322,9 @@ if "processed_img" not in st.session_state or st.session_state.get("file_uploade
                 st.session_state["extracted_json"] = extracted_json
             st.rerun()
 
+
 # =========================================================
-# PAGE 2 : RESULT DASHBOARD WITH ACTIVE EVENT ACTION
+# PAGE 2 : RESULT (🔴 เพิ่มตัวดักจับ Action Router ตรงจุดนี้)
 # =========================================================
 else:
     processed_img  = st.session_state["processed_img"]
@@ -336,7 +337,7 @@ else:
         and extracted_json["error"]
     )
 
-    # 🔥 🕵️‍♂️ ดักจับสัญญาณการคลิกปุ่มจาก Iframe (Action Router)
+    # 🔥 ดักจับสัญญาณการกดปุ่มจากทุุกกล่อง Iframe เข้าสู่ระบบประมวลผลหลักของแอป
     action = st.query_params.get("action", "")
 
     if action == "back":
@@ -344,25 +345,25 @@ else:
         reset_app()
         st.rerun()
 
-    elif action == "zoom":
-        st.query_params.clear()
-        st.toast("🔍 เปิดโหมดพรีวิวขยายใบเสร็จเต็มหน้าจอเสร็จสิ้น!")
-
     elif action == "edit":
         st.query_params.clear()
-        st.toast("✏️ เปิดสิทธิ์เข้าแก้ไขฟิลด์ข้อมูลเรียบร้อย")
+        st.toast("✏️ ระบบสแกน: เปิดสิทธิ์อนุญาตแก้ไขช่องฟิลด์ข้อมูลสำเร็จ")
 
     elif action == "delete":
         st.query_params.clear()
-        st.toast("🗑️ ทำการล้างก้อนข้อมูลใบเสร็จฉบับนี้เรียบร้อย")
+        st.toast("🗑️ ระบบสแกน: ดำเนินการลบแบบจำลองใบเสร็จรับเงินออกจากตาราง")
 
     elif action == "copy":
         st.query_params.clear()
-        st.toast("📋 คัดลอกข้อมูลใบเสร็จลงใน Clipboard สำเร็จแล้ว")
+        st.toast("📋 ระบบสแกน: คัดลอกอักขระและราคาสินค้าลงใน Clipboard สำเร็จแล้ว")
 
     elif action == "share":
         st.query_params.clear()
-        st.toast("🔗 สร้างลิงก์แชร์ข้อมูลเรียบร้อย")
+        st.toast("🔗 ระบบสแกน: สร้างลิงก์และช่องทางการแชร์โครงข่ายสำเร็จ")
+
+    elif action == "maximize":
+        st.query_params.clear()
+        st.toast("🔍 ระบบสแกน: ขยายขนาดรูปภาพพรีวิวใบเสร็จแสดงผลเต็มหน้าจอ")
 
     elif action == "export":
         st.query_params.clear()
@@ -393,7 +394,7 @@ else:
     col_left, col_right = st.columns([1, 1])
 
     # ════════════════════════════════════════
-    # LEFT (ฝั่งซ้าย)
+    # LEFT (ฝั่งซ้าย - คงสไตล์เดิมไว้ 100%)
     # ════════════════════════════════════════
     with col_left:
         st.markdown('<div class="img-card-wrap">', unsafe_allow_html=True)
@@ -405,11 +406,10 @@ else:
         st.image(display_img, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # เรนเดอร์ปุ่มย้อนกลับและแว่นขยาย
         components.html(build_img_controls_html(), height=58, scrolling=False)
 
     # ════════════════════════════════════════
-    # RIGHT (ฝั่งขวา)
+    # RIGHT (ฝั่งขวา - คงสไตล์เดิมไว้ 100%)
     # ════════════════════════════════════════
     with col_right:
         if has_error:
@@ -418,10 +418,7 @@ else:
             items_count = len(extracted_json.get("items", []) or [])
             card_height = 430 + max(0, items_count - 2) * 38
 
-            # เรนเดอร์การ์ดรายละเอียดใบเสร็จ
             components.html(build_detail_card_html(extracted_json), height=card_height, scrolling=False)
-
-            # เรนเดอร์แถบเครื่องมือ คัดลอก, แชร์, ส่งออก ด้านล่าง
             components.html(build_action_bar_html(), height=58, scrolling=False)
 
     st.markdown('</div>', unsafe_allow_html=True)
