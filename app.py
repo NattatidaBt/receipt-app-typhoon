@@ -22,7 +22,16 @@ st.markdown("""
         display: none !important;
     }
 
-    /* ปรับแต่งสีพื้นหลังของทั้งหน้าจอให้เป็นสีขาวอมชมพูพาสเทลละมุน */
+    /* 🔥 ซ่อนปุ่ม Upload ดั้งเดิม และคำอธิบายขนาดไฟล์ของ Streamlit */
+    [data-testid="stFileUploaderDropzoneInputButton"], 
+    [data-testid="stFileUploaderFileSize"] {
+        display: none !important;
+    }
+    .stFileUploader > section > div {
+        display: none !important;
+    }
+
+    /* บังคับเปลี่ยนสีพื้นหลังทั้งแอปพลิเคชันให้เป็นสีขาวอมชมพูหวานละมุน */
     .stApp {
         background-color: #FFF2F6 !important;
     }
@@ -73,22 +82,19 @@ st.markdown("""
         margin-bottom: 50px;
     }
 
-    /* 🔥 ซ่อนไส้ในและแต่งกล่องสแกนไฟล์ดั้งเดิมของ Streamlit ให้เหมือนดีไซน์ 100% */
+    /* ปรับแต่งความโค้งมนและสีของกล่องลากไฟล์อัปโหลดให้เป็นเส้นประชมพูแบบน่ารัก */
     .stFileUploader {
         max-width: 850px;
         margin: 0 auto !important;
     }
     .stFileUploader > section {
-        background-color: transparent !important;
+        background-color: #FFFFFF !important; /* เปลี่ยนเป็นสีขาวคลีนตาม Mockup */
         border: 2px dashed #F5C2D1 !important;
         border-radius: 24px !important;
         padding: 60px 20px !important;
-        transition: all 0.3s ease;
+        box-shadow: 0 10px 30px rgba(212, 122, 154, 0.04) !important;
     }
-    /* ซ่อนคำว่า Browse files และข้อความดั้งเดิมเพื่อไม่ให้หลุดธีม */
-    .stFileUploader label, .stFileUploader section > div:not(.stFileUploaderDropzone) {
-        display: none !important;
-    }
+
     .stFileUploaderDropzone {
         border: none !important;
         background: transparent !important;
