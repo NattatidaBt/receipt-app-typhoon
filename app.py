@@ -20,11 +20,10 @@ from ocr_engine import (
 )
 
 # =========================================================
-# GLOBAL NATIVE CSS DESIGN (RecAipt Pixel-Perfect Theme)
+# GLOBAL CSS
 # =========================================================
 st.markdown("""
 <style>
-/* ── 1. ลบโครงสร้างแถบเครื่องมือดั้งเดิมรอบแอปพลิเคชันออกเกลี้ยง ── */
 header, footer, #MainMenu,
 [data-testid="stToolbar"],
 [data-testid="stSidebar"] {
@@ -33,7 +32,6 @@ header, footer, #MainMenu,
     height: 0 !important;
 }
 
-/* ── 2. ตั้งค่าโทนสีพื้นหลังขาวอมชมพูพาสเทลตามแนวทางรายงานโครงงาน ── */
 .stApp { 
     background-color: #FFF2F6 !important; 
 }
@@ -43,7 +41,6 @@ header, footer, #MainMenu,
     padding: 1.5rem 3rem !important;
 }
 
-/* ── 3. ดีไซน์แถบก้อนกล่องขาวด้านบน (Header Bar) ตามเล่มหน้า 41 ── */
 .header-bar {
     display: flex;
     justify-content: space-between;
@@ -71,7 +68,6 @@ header, footer, #MainMenu,
     font-weight: 500;
 }
 
-/* หัวข้ออักษรอธิบายใหญ่ตรงกลาง */
 .hero-title {
     text-align: center;
     color: #4A2E35;
@@ -86,16 +82,12 @@ header, footer, #MainMenu,
     margin-bottom: 45px;
 }
 
-/* =========================================================
-   🔥 4. บังคับล็อกพิกัดกล่องสแกนอัปโหลดไฟล์ (ตรงตามดีไซน์ 100%)
-========================================================= */
 section[data-testid="stFileUploader"] {
     max-width: 780px;
     margin: 0 auto !important;
     position: relative !important;
 }
 
-/* ดึงโครงกล่องด้านนอกสุดให้กางตัวเป็นสีขาวผืนผ้า พร้อมเส้นประสีชมพูล้อมรอบ */
 section[data-testid="stFileUploader"] > div {
     background-color: #FFFFFF !important;
     border: 2px dashed #F4C6D5 !important;
@@ -110,7 +102,6 @@ section[data-testid="stFileUploader"] > div {
     padding: 0 !important;
 }
 
-/* ซ่อนชิ้นส่วนเศษปุ่มดั้งเดิม ข้อมูลตัวเลขไฟล์ และโครงไอคอนก้อนเมฆออกถาวร */
 div[data-testid="stFileUploaderDropzone"] svg,
 div[data-testid="stFileUploaderDropzoneInstructions"],
 [data-testid="stFileUploaderFileHeader"],
@@ -126,7 +117,6 @@ small[data-testid="stWidgetLabel-help"],
     height: 0 !important;
 }
 
-/* ขยายแผ่นพื้นที่รับอินพุต Dropzone ให้โปร่งแสงเต็มกรอบขาวเพื่อรองรับการลากวางไฟล์ */
 div[data-testid="stFileUploaderDropzone"] {
     background: transparent !important;
     border: none !important;
@@ -147,9 +137,8 @@ div[data-testid="stFileUploaderDropzone"] button {
     cursor: pointer !important;
 }
 
-/* 📌 สร้างหน้ากากตัวจำลองเอกสารพาสเทลมินิมอลล็อกระนาบกึ่งกลางกล่องขาวอย่างเที่ยงตรง */
 section[data-testid="stFileUploader"]::after {
-    content: "📄\\A\\A Choose or paste a file here (image or PDF)";
+    content: "📄\A\A Choose or paste a file here (image or PDF)";
     white-space: pre-wrap;
     position: absolute;
     top: 50%;
@@ -163,15 +152,8 @@ section[data-testid="stFileUploader"]::after {
     pointer-events: none;
     line-height: 1.2;
 }
-/* ขยายขนาดเฉพาะไอคอนแถวแรกให้ใหญ่สะดุดตาตาม Mockup เล่มหน้า 41 */
-section[data-testid="stFileUploader"]::first-line {
-    font-size: 52px;
-    color: #4A2E35;
-}
 
-/* =========================================================
-   5. RESULT DASHBOARD VIEWPORT (ล้างช่องว่างส่วนเกินใต้ภาพออกถาวร)
-========================================================= */
+/* ── Result wrapper ── */
 .result-wrapper {
     background: #FFFFFF;
     border-radius: 32px;
@@ -187,13 +169,36 @@ div[data-testid="stHorizontalBlock"] {
 }
 
 .img-card-wrap {
-    background: #FFFFFF;
+    background: #FAFAFA;
     border-radius: 24px;
     padding: 15px;
     border: 1px solid #F8D7E3;
+    position: relative;
 }
 
-/* สยบล้างระยะห่างและ Padding ของกรอบ Iframe ข้อมูลฝั่งขวา */
+/* ซ่อน expander ทั้งหมดใน result page */
+.hide-expander [data-testid="stExpander"] {
+    display: none !important;
+}
+
+/* zoom button overlay */
+.zoom-btn-wrap {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+}
+.zoom-btn-wrap div[data-testid="stButton"] > button {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    background: rgba(255,255,255,0.9) !important;
+    color: #4A2E35 !important;
+    font-size: 14px !important;
+    padding: 0 !important;
+    box-shadow: 0 2px 8px rgba(74,46,53,0.15) !important;
+    border: 1px solid #F4C6D5 !important;
+}
+
 div[data-testid="stHtml"] {
     padding: 0 !important;
     margin: 0 !important;
@@ -204,34 +209,54 @@ iframe {
     border-radius: 24px !important;
 }
 
-/* =========================================================
-   6. STREAMLIT BUTTONS & ACTIONS DESIGN
-========================================================= */
-div[data-testid="stButton"] > button {
+/* ── back button (ใน result card header) ── */
+.back-icon-wrap div[data-testid="stButton"] > button {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
     background: #F8D7E3 !important;
     color: #A35271 !important;
+    font-size: 16px !important;
+    padding: 0 !important;
     border: none !important;
-    border-radius: 12px !important;
-    font-weight: 700 !important;
-    transition: all 0.2s ease !important;
-}
-div[data-testid="stButton"] > button:hover {
-    background-color: #D47A9A !important;
-    color: white !important;
+    margin: 0 !important;
 }
 
-.back-wrap div[data-testid="stButton"] > button {
+/* ── export action bar buttons ── */
+.action-bar-wrap {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+}
+.action-bar-wrap div[data-testid="stButton"] {
+    flex: 1;
+}
+.action-bar-wrap div[data-testid="stButton"] > button {
+    width: 100% !important;
+    height: 44px !important;
+    font-size: 14px !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+}
+/* ปุ่มส่งออกสีชมพูเข้ม */
+.export-primary div[data-testid="stButton"] > button {
+    background: #C97D98 !important;
+    color: white !important;
+}
+.export-primary div[data-testid="stButton"] > button:hover {
+    background: #A35271 !important;
+}
+
+/* ── bottom left back arrow ── */
+.bottom-back-wrap div[data-testid="stButton"] > button {
     width: 44px !important;
     height: 44px !important;
+    border-radius: 50% !important;
+    background: #F8D7E3 !important;
+    color: #A35271 !important;
     font-size: 18px !important;
     padding: 0 !important;
-    margin-bottom: 15px !important;
-}
-.export-wrap div[data-testid="stButton"] > button {
-    width: 100% !important;
-    height: 48px !important;
-    font-size: 15px !important;
-    margin-top: 15px !important;
+    border: none !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -266,7 +291,7 @@ def safe_int(value, default=1):
         return default
 
 def build_detail_card_html(extracted_json):
-    """สร้างโครงสร้างฟอร์มรายละเอียดใบเสร็จสีชมพูพาสเทลตามเอกสารเล่มหน้า 42"""
+    """Card HTML พร้อม Edit/Delete icons ใน header ตรงตาม Target UI"""
     merchant     = extracted_json.get("store_name",   "—") or "—"
     receipt_no   = extracted_json.get("receipt_no",   "—") or "—"
     date_val     = extracted_json.get("date",         "—") or "—"
@@ -304,13 +329,54 @@ def build_detail_card_html(extracted_json):
 <style>
 * {{ box-sizing:border-box; margin:0; padding:0; }}
 body {{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:transparent; padding:2px; }}
-.card {{ background:#FFF6F8; border-radius:24px; border:1px solid #F8D7E3; padding:28px; overflow:hidden; }}
-.dc-header {{ display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; }}
-.dc-title {{ font-size:18px; font-weight:700; color:#4A2E35; width:100%; text-align:center; }}
-.dc-body {{ margin-top:10px; }}
+.card {{ background:#FFF6F8; border-radius:24px; border:1px solid #F8D7E3; padding:24px 28px; overflow:hidden; }}
+
+/* ── Header row: back + title + icons ── */
+.dc-header {{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}}
+.dc-back {{
+    width:32px; height:32px;
+    border-radius:50%;
+    background:#F8D7E3;
+    color:#A35271;
+    border:none;
+    font-size:16px;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+}}
+.dc-title {{
+    font-size:17px;
+    font-weight:700;
+    color:#4A2E35;
+    flex:1;
+    text-align:center;
+}}
+.dc-icons {{
+    display:flex;
+    gap:8px;
+    flex-shrink:0;
+}}
+.icon-btn {{
+    width:32px; height:32px;
+    border-radius:8px;
+    background:#FFF0F5;
+    color:#A35271;
+    border:1px solid #F4C6D5;
+    font-size:14px;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+}}
+.icon-btn:hover {{ background:#F4C6D5; }}
+
+.dc-body {{ margin-top:4px; }}
 .badge {{ display:inline-block; background:#FFF0F5; color:#A35271; border:1px solid #F4C6D5; border-radius:8px; font-size:12px; padding:4px 12px; margin-bottom:16px; }}
 .info-row {{ display:flex; gap:8px; font-size:13px; margin-bottom:12px; align-items:baseline; }}
-.lbl {{ color:#7A5A63; min-width:120px; flex-shrink:0; font-weight:500; }}
+.lbl {{ color:#7A5A63; min-width:130px; flex-shrink:0; font-weight:500; }}
 .val {{ color:#4A2E35; font-weight:600; }}
 .divider {{ border:none; border-top:1px solid #F4E0E8; margin:16px 0; }}
 .sec-lbl {{ font-size:13px; color:#4A2E35; font-weight:bold; margin-bottom:12px; }}
@@ -327,9 +393,16 @@ body {{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; back
 </head>
 <body>
 <div class="card">
+  <!-- Header: back + title + edit/delete -->
   <div class="dc-header">
+    <button class="dc-back" onclick="window.parent.postMessage('back','*')">←</button>
     <span class="dc-title">รายละเอียดใบเสร็จ</span>
+    <div class="dc-icons">
+      <button class="icon-btn" title="แก้ไข">✏️</button>
+      <button class="icon-btn" title="ลบ">🗑️</button>
+    </div>
   </div>
+
   <div class="dc-body">
     <span class="badge">{receipt_type}</span>
     <div class="info-row"><span class="lbl">ร้านค้า / ผู้ขาย :</span><span class="val">{merchant}</span></div>
@@ -426,10 +499,6 @@ else:
 
     # ── LEFT: รูปใบเสร็จ ──────────────────────────────────
     with col_left:
-        st.markdown('<div class="back-wrap">', unsafe_allow_html=True)
-        st.button("←", key="back_btn", on_click=reset_app)
-        st.markdown('</div>', unsafe_allow_html=True)
-
         st.markdown('<div class="img-card-wrap">', unsafe_allow_html=True)
 
         if len(processed_img.shape) == 2:
@@ -439,50 +508,69 @@ else:
 
         st.image(display_img, use_container_width=True)
 
-        with st.expander("📄 Raw OCR Text"):
-            st.code(raw_text, language="text")
+        # ปุ่ม zoom มุมล่างขวาของรูป
+        st.markdown('<div class="zoom-btn-wrap">', unsafe_allow_html=True)
+        st.button("⤢", key="zoom_btn")
+        st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown('</div>', unsafe_allow_html=True)  # img-card-wrap
+
+        # ── ปุ่ม back arrow ใต้รูป (ซ้ายล่าง) ──
+        st.markdown('<div class="bottom-back-wrap">', unsafe_allow_html=True)
+        st.button("←", key="back_btn", on_click=reset_app)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     # ── RIGHT: รายละเอียดใบเสร็จ ─────────────────────────
     with col_right:
         if has_error:
             st.error(f"❌ {extracted_json['error']}")
         else:
-            # คำนวณความสูง card ให้สมดุลพอดีกับฟอร์ม
             items_count = len(extracted_json.get("items", []) or [])
             card_height = 430 + max(0, items_count - 2) * 38
 
-            # render HTML ผ่าน iframe
+            # render HTML card (มี back/edit/delete ใน header แล้ว)
             components.html(
                 build_detail_card_html(extracted_json),
                 height=card_height,
                 scrolling=False,
             )
 
-            # ปุ่ม ส่งออก
-            st.markdown('<div class="export-wrap">', unsafe_allow_html=True)
-            if st.button("📤  ส่งออก", key="export_btn"):
-                items_list = extracted_json.get("items", []) or []
-                export_items = [
-                    {
-                        "name":       it.get("name", ""),
-                        "qty":        safe_int(it.get("qty", 1)),
-                        "unit_price": safe_float(it.get("unit_price", 0)),
-                        "amount":     safe_int(it.get("qty", 1)) * safe_float(it.get("unit_price", 0)),
-                    }
-                    for it in items_list
-                ]
-                st.success("🎉 บันทึกข้อมูลเรียบร้อยแล้ว")
-                st.json({
-                    "store_name": extracted_json.get("store_name", "—"),
-                    "receipt_no": extracted_json.get("receipt_no",  "—"),
-                    "date":       extracted_json.get("date",        "—"),
-                    "items":      export_items,
-                    "subtotal":   safe_float(extracted_json.get("subtotal", 0)),
-                    "vat":        safe_float(extracted_json.get("vat",      0)),
-                    "total":      safe_float(extracted_json.get("total",    0)),
-                })
-            st.markdown('</div>', unsafe_allow_html=True)
+            # ── Action bar: 3 ปุ่มล่างสุด ──
+            st.markdown('<div class="action-bar-wrap">', unsafe_allow_html=True)
+
+            btn_col1, btn_col2, btn_col3 = st.columns([1, 1, 1.4])
+
+            with btn_col1:
+                st.button("📋  คัดลอก", key="copy_btn")
+
+            with btn_col2:
+                st.button("📤  แชร์", key="share_btn")
+
+            with btn_col3:
+                st.markdown('<div class="export-primary">', unsafe_allow_html=True)
+                if st.button("⬇️  ส่งออก", key="export_btn"):
+                    items_list = extracted_json.get("items", []) or []
+                    export_items = [
+                        {
+                            "name":       it.get("name", ""),
+                            "qty":        safe_int(it.get("qty", 1)),
+                            "unit_price": safe_float(it.get("unit_price", 0)),
+                            "amount":     safe_int(it.get("qty", 1)) * safe_float(it.get("unit_price", 0)),
+                        }
+                        for it in items_list
+                    ]
+                    st.success("🎉 บันทึกข้อมูลเรียบร้อยแล้ว")
+                    st.json({
+                        "store_name": extracted_json.get("store_name", "—"),
+                        "receipt_no": extracted_json.get("receipt_no",  "—"),
+                        "date":       extracted_json.get("date",        "—"),
+                        "items":      export_items,
+                        "subtotal":   safe_float(extracted_json.get("subtotal", 0)),
+                        "vat":        safe_float(extracted_json.get("vat",      0)),
+                        "total":      safe_float(extracted_json.get("total",    0)),
+                    })
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            st.markdown('</div>', unsafe_allow_html=True)  # action-bar-wrap
 
     st.markdown('</div>', unsafe_allow_html=True)  # result-wrapper
