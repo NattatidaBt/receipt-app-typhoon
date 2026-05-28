@@ -20,7 +20,7 @@ from ocr_engine import (
 )
 
 # =========================================================
-# CUSTOM CSS (RecAipt Exact Matching Layout)
+# CUSTOM CSS (RecAipt Pixel-Perfect Overlay)
 # =========================================================
 st.markdown("""
 <style>
@@ -105,7 +105,7 @@ footer,
 }
 
 /* =========================================================
-   FILE UPLOADER FRAME (แก้ไขปัญหากรอบหลุดระนาบ)
+   🔥 FILE UPLOADER RE-ARCHITECT (แก้ไขกล่องหายและปุ่มโผล่)
 ========================================================= */
 section[data-testid="stFileUploader"] {
     max-width: 850px;
@@ -113,68 +113,75 @@ section[data-testid="stFileUploader"] {
     position: relative;
 }
 
+/* ดีไซน์กล่องสีขาวใบใหญ่ให้กางตัวออกและมีเส้นประสีชมพู */
 section[data-testid="stFileUploader"] > div {
     background-color: white !important;
     border: 2px dashed #F4C6D5 !important;
     border-radius: 30px !important;
-    min-height: 280px !important;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.03);
+    min-height: 260px !important;
+    position: relative !important;
+    box-shadow: 0 12px 40px rgba(74, 46, 53, 0.03) !important;
+    padding: 0 !important;
 }
 
-/* บังคับล้างไอคอนก้อนเมฆและข้อความคำแนะนำดั้งเดิมของระบบ */
+/* ซ่อนคำอธิบายและไอคอนเดิมที่หลุดธีม */
 [data-testid="stFileUploaderDropzoneInstructions"],
 [data-testid="stFileUploaderDropzone"] svg,
 .stFileUploaderSection,
 small[data-testid="stWidgetLabel-help"] {
     display: none !important;
-    visibility: hidden !important;
 }
 
-/* 🔥 ซ่อนปุ่ม Upload ดั้งเดิมและข้อความระบุขนาดไฟล์อย่างปลอดภัยโดยไม่ทำลายโครงสร้างความสูง */
-[data-testid="stFileUploaderDropzoneInputButton"],
-[data-testid="stFileUploaderFileSize"],
-[data-testid="stFileUploaderFileHeader"],
-[data-testid="stFileUploaderDeleteBtn"],
-[data-testid="stFileUploaderFileName"],
-[data-testid="stFileUploaderFile"] {
-    opacity: 0 !important;
-    position: absolute !important;
-    z-index: -1 !important;
-    height: 0 !important;
-    width: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
+/* ยืดพื้นที่ Dropzone ให้เต็มกรอบสีขาว */
 [data-testid="stFileUploaderDropzone"] {
     background: transparent !important;
     border: none !important;
-    min-height: 280px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    min-height: 260px !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* ขยายปุ่ม Browse และข้อความเดิมให้ใหญ่เต็มกล่อง แล้วปรับให้โปร่งแสง 100% */
+[data-testid="stFileUploaderDropzone"] button,
+[data-testid="stFileUploaderDropzone"] div,
+[data-testid="stFileUploaderFileSize"] {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    opacity: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    cursor: pointer !important;
+    z-index: 20 !important;
 }
 
 /* =========================================================
-   CUSTOM UPLOAD CONTENT Overlay (จัดระเบียบระนาบกึ่งกลางกล่อง)
+   CUSTOM UPLOAD CONTENT LAYER (หน้ากากข้อความจำลอง)
 ========================================================= */
 .upload-overlay {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 5;
+    z-index: 10;
     pointer-events: none;
     width: 100%;
-}
-
-.custom-upload-box {
     text-align: center;
 }
 
+.custom-upload-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
 .upload-icon {
-    font-size: 54px;
-    margin-bottom: 14px;
+    font-size: 50px;
+    margin-bottom: 15px;
     color: #4A2E35;
 }
 
@@ -309,10 +316,10 @@ if "processed_img" not in st.session_state or st.session_state.get("file_uploade
     st.markdown("<div class='hero-subtitle'>Upload an image or PDF of your receipt to store it using OCR</div>",
                 unsafe_allow_html=True)
 
-    # วางคอนเทนเนอร์ Uploader หลัก
+    # วาง uploader ตัวหลัก
     uploaded_file = st.file_uploader("", type=["jpg", "jpeg", "png", "pdf"], key="uploader_widget")
 
-    # ใช้ระบบ Absolute Position ประกบหน้ากากเข้ากึ่งกลางเฟรมอย่างแม่นยำร้อยเปอร์เซ็นต์
+    # หน้ากากจำลองจัดให้อยู่ตำแหน่งกึ่งกลางกล่องขาวอย่างเที่ยงตรงด้วยสิทธิ์ควบคุม Absolute Z-Index
     st.markdown("""
     <div class="upload-overlay">
         <div class="custom-upload-box">
@@ -323,7 +330,7 @@ if "processed_img" not in st.session_state or st.session_state.get("file_uploade
     """, unsafe_allow_html=True)
 
     # -----------------------------------------------------
-    # PIPELINE EXECUTION
+    # PIPELINE ENGINE EXECUTION
     # -----------------------------------------------------
     if uploaded_file is not None:
         st.session_state["file_uploaded"] = uploaded_file
