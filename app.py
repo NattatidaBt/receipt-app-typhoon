@@ -12,7 +12,7 @@ from ocr_engine import (
 # 1. ตั้งค่าหน้าต่างระบบหลัก (ซ่อนเมนูและ Sidebar ทั้งหมด)
 st.set_page_config(page_title="RecAipt - Receipt scanning tools", layout="wide", initial_sidebar_state="collapsed")
 
-# 🎨 2. ประกาศสไตล์ CSS ระดับสูง เพื่อล้างสไตล์ดั้งเดิมของ Streamlit และใช้ดีไซน์ RecAipt แทน
+# 🎨 2. ประกาศสไตล์ CSS ปรับแต่งรูปลักษณ์ให้เหมือนต้นแบบ Mockup และลบองค์ประกอบส่วนเกิน
 st.markdown("""
     <style>
     /* ซ่อนแถบเครื่องมือด้านบน ปุ่มเมนู และฟุตเตอร์ของ Streamlit ออกให้หมด 100% */
@@ -22,12 +22,15 @@ st.markdown("""
         display: none !important;
     }
 
-    /* 🔥 ซ่อนปุ่ม Upload ดั้งเดิม และคำอธิบายขนาดไฟล์ของ Streamlit */
-    [data-testid="stFileUploaderDropzoneInputButton"], 
-    [data-testid="stFileUploaderFileSize"] {
+    /* 🔴 สั่งซ่อนปุ่ม Upload ดั้งเดิม ตัวเลขจำกัดขนาดไฟล์ และคำอธิบายย่อยของ Streamlit ทั้งหมด */
+    [data-testid="stFileUploaderDropzoneInputButton"],
+    [data-testid="stFileUploaderFileSize"],
+    small[data-testid="stWidgetLabel-help"] {
         display: none !important;
     }
-    .stFileUploader > section > div {
+
+    /* สกัดซ่อนข้อความจำพวก Drag and drop file here ของบล็อกหลักเพื่อความคลีน */
+    div[data-testid="stFileUploaderDropzone"] > div {
         display: none !important;
     }
 
@@ -36,7 +39,7 @@ st.markdown("""
         background-color: #FFF2F6 !important;
     }
 
-    /* ดีไซน์แถบกล่องสีขาวด้านบน (Header Bar) ตาม Mockup */
+    /* ดีไซน์แถบกล่องสีขาวด้านบน (Header Bar) */
     .header-bar {
         background-color: #FFFFFF;
         border-radius: 20px;
@@ -88,7 +91,7 @@ st.markdown("""
         margin: 0 auto !important;
     }
     .stFileUploader > section {
-        background-color: #FFFFFF !important; /* เปลี่ยนเป็นสีขาวคลีนตาม Mockup */
+        background-color: #FFFFFF !important;
         border: 2px dashed #F5C2D1 !important;
         border-radius: 24px !important;
         padding: 60px 20px !important;
@@ -98,20 +101,24 @@ st.markdown("""
     .stFileUploaderDropzone {
         border: none !important;
         background: transparent !important;
+        padding: 0 !important;
     }
+
     /* สร้างหน้าต่างกลางกล่องรับไฟล์จำลอง (Icon เอกสาร + คำแนะนำ) */
     .custom-upload-box {
         text-align: center;
         pointer-events: none;
+        margin-top: -10px;
     }
     .upload-icon {
-        font-size: 48px;
-        color: #7B6167;
+        font-size: 54px;
+        color: #A3858C;
         margin-bottom: 15px;
     }
     .upload-text {
         color: #A3858C;
         font-size: 16px;
+        font-family: 'Inter', sans-serif;
     }
 
     /* จัดการบล็อกการแบ่งฝั่งซ้าย-ขวา (Split-Screen Space) */
@@ -174,7 +181,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 🏢 ส่วนประกอบที่ 1: แถบกล่องสีขาวควบคุมโลโก้และภาษาด้านบนสุด (Header Bar)
+# 🏢 ส่วนประกอบแถบกล่องสีขาวควบคุมโลโก้และภาษาด้านบนสุด (Header Bar)
 st.markdown("""
     <div class="header-bar">
         <div class="logo-text">📄 RecAipt</div>
@@ -182,20 +189,21 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# ตรวจสอบโครงสร้างสเตตัสหน้าระบบ เพื่อทำการจำแนกการแสดงผลสไตล์หน้าจอ
+# ระบบสลับการทำงานตาม State การอัปโหลดไฟล์
 if st.session_state.get("file_uploaded") is None:
 
-    # 📌 หน้าแรกเริ่มใช้งาน (เหมือนดีไซน์หน้า 2 ของกลุ่มคุณ 100%)
+    # 📌 หน้าแรก: ออกแบบคลีน มินิมอล ซ่อนปุ่ม Upload เรียบร้อย
     st.markdown("<div class='hero-title'>Receipt scanning and data collection tools</div>", unsafe_allow_html=True)
     st.markdown("<div class='hero-subtitle'>Upload an image or PDF of your receipt to store it using OCR</div>",
                 unsafe_allow_html=True)
 
-    # วางกล่องรับไฟล์พร้อมซ้อนทับด้วยไอคอนแบบจำลอง
+    # วางตัวรับเอกสารหลัก
     uploaded_file = st.file_uploader("", type=["jpg", "jpeg", "png", "pdf"], key="uploader_widget")
 
+    # กล่องข้อความและไอคอนจำลองตรงกลางเฟรมประสีชมพู
     st.markdown("""
-        <div style="margin-top: -155px; margin-bottom: 80px;" class="custom-upload-box">
-            <div class="upload-icon">🖺</div>
+        <div style="margin-top: -135px; margin-bottom: 65px;" class="custom-upload-box">
+            <div class="upload-icon">📄</div>
             <div class="upload-text">Choose or paste a file here (image or PDF)</div>
         </div>
     """, unsafe_allow_html=True)
@@ -205,12 +213,11 @@ if st.session_state.get("file_uploaded") is None:
         st.rerun()
 
 else:
-    # 📌 หน้าผลลัพธ์ข้อมูลดิจิทัล (เหมือนดีไซน์หน้า 3 ของกลุ่มคุณ 100%)
+    # 📌 หน้าสอง: หน้าต่างสกัดและจัดการผลลัพธ์ข้อมูลดิจิทัล
     uploaded_file = st.session_state["file_uploaded"]
     file_bytes = uploaded_file.read()
     file_name = uploaded_file.name
 
-    # ประมวลผลภาพหลังบ้านผ่านโมดูล AI
     with st.spinner("⏳ กระบวนการขั้นที่ 1: กำลังปรับความสมบูรณ์ภาพเอกสาร..."):
         img = load_image_or_pdf(file_bytes, file_name)
         if img is None:
@@ -229,15 +236,13 @@ else:
             st.session_state.clear()
             st.rerun()
     else:
-        with st.spinner("🤖 กระบวนการขั้นที่ 3: ดำเนินการคัดแยกก้อนพัสดุฟิลด์ข้อมูลด้วย Typhoon LLM..."):
+        with st.spinner("🤖 กระบวนการขั้นที่ 3: กำลังเรียบเรียงโครงสร้างโครงข่ายด้วย Typhoon LLM..."):
             extracted_json = call_typhoon_llm(raw_text)
 
-        # ปุ่มกดย้อนกลับรูปแบบวงกลมสีชมพูตามระนาบดีไซน์ (Back Arrow Button)
         if st.button("⇜", key="back_to_upload"):
             st.session_state.clear()
             st.rerun()
 
-        # สร้างเค้าโครงโครงสร้างแบบสองฝั่งหน้าจอ (Split-Screen Component)
         col_left, col_right = st.columns([1, 1.1])
 
         with col_left:
@@ -251,7 +256,6 @@ else:
                 st.code(raw_text, language="text")
 
         with col_right:
-            # ครอบฟอร์มทั้งหมดไว้ในการ์ดสไตล์สีชมพูพาสเทลตามคุณสมบัติการดีไซน์
             st.markdown('<div class="receipt-card">', unsafe_allow_html=True)
             st.markdown(
                 "<h4 style='color: #4A2E35; font-weight: bold; text-align: center; margin-bottom: 25px;'>รายละเอียดใบเสร็จ</h4>",
@@ -328,10 +332,10 @@ else:
                     pay_method = st.text_input("💳 ช่องทางการจ่ายชำระเงิน (Payment Method)",
                                                value=extracted_json.get("payment_method", ""))
 
-                    save_btn = st.form_submit_button("📥 ส่งออก")
+                    save_btn = st.form_submit_button("📤 ส่งออก")
 
                 if save_btn:
-                    st.success("🎉 บันทึกและดึงข้อมูล Unstructured เข้าสู่ก้อนฐานข้อมูลสำเร็จ!")
+                    st.success("🎉 บันทึกดิจิทัลไฟล์เสร็จสิ้นเรียบร้อย!")
                     st.json({
                         "store_name": merchant,
                         "tax_id": tax_id,
