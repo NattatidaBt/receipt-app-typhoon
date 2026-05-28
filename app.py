@@ -106,6 +106,9 @@ header, footer, #MainMenu,
 }
 [data-testid="stHtml"] { padding:0 !important; margin:0 !important; }
 iframe { display:block !important; margin:0 auto !important; border-radius:24px !important; }
+[data-testid="stElementToolbar"] {display:none !important;}
+button[title="View fullscreen"] {display:none !important;}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -274,7 +277,7 @@ svg{{display:inline-block;vertical-align:middle}}
 <div class="bar">
   <button class="btn">{SVG_COPY} คัดลอก</button>
   <button class="btn">{SVG_SHARE} แชร์</button>
-  <button class="btn primary" onclick="window.parent.location.search='?action=export'">{SVG_DL} ส่งออก</button>
+  <button class="btn primary" onclick="window.parent.parent.location.search='?action=export'">{SVG_DL} ส่งออก</button>
 </div>
 </body></html>"""
 
@@ -290,7 +293,7 @@ svg{{display:inline-block;vertical-align:middle}}
 .round-btn:hover{{background:#F8D7E3}}
 </style></head><body>
 <div class="row">
-  <button class="round-btn" onclick="window.parent.location.search='?action=back'">{SVG_BACK}</button>
+  <button class="round-btn" onclick="window.parent.parent.location.search='?action=back'">{SVG_BACK}</button>
   <button class="round-btn">{SVG_ZOOM}</button>
 </div>
 </body></html>"""
