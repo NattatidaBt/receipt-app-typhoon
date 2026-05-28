@@ -274,7 +274,7 @@ svg{{display:inline-block;vertical-align:middle}}
 <div class="bar">
   <button class="btn">{SVG_COPY} คัดลอก</button>
   <button class="btn">{SVG_SHARE} แชร์</button>
-  <button class="btn primary" onclick="window.parent.postMessage('export','*')">{SVG_DL} ส่งออก</button>
+  <button class="btn primary" onclick="window.parent.location.search='?action=export'">{SVG_DL} ส่งออก</button>
 </div>
 </body></html>"""
 
@@ -290,30 +290,12 @@ svg{{display:inline-block;vertical-align:middle}}
 .round-btn:hover{{background:#F8D7E3}}
 </style></head><body>
 <div class="row">
-  <button class="round-btn" onclick="window.parent.postMessage('back','*')">{SVG_BACK}</button>
+  <button class="round-btn" onclick="window.parent.location.search='?action=back'">{SVG_BACK}</button>
   <button class="round-btn">{SVG_ZOOM}</button>
 </div>
 </body></html>"""
 
 
-# =========================================================
-# postMessage listener  (รับ back / export จาก iframe)
-# =========================================================
-# inject JS ที่รับ postMessage แล้วกด hidden button
-st.markdown("""
-<script>
-window.addEventListener('message', function(e) {
-    if (e.data === 'back') {
-        const btns = window.parent.document.querySelectorAll('button[kind="secondary"]');
-        btns.forEach(b => { if (b.innerText.trim() === '__back__') b.click(); });
-    }
-    if (e.data === 'export') {
-        const btns = window.parent.document.querySelectorAll('button[kind="secondary"]');
-        btns.forEach(b => { if (b.innerText.trim() === '__export__') b.click(); });
-    }
-});
-</script>
-""", unsafe_allow_html=True)
 
 
 # =========================================================
@@ -371,6 +353,38 @@ else:
         and extracted_json["error"]
     )
 
+    action = st.query_params.get("action", "")
+
+    if action == "back":
+        st.query_params.clear()
+        reset_app()
+        st.rerun()
+
+    elif action == "export":
+        st.query_params.clear()
+
+        items_list = extracted_json.get("items", []) or []
+        export_items = [
+            {
+                "name": it.get("name", ""),
+                "qty": safe_int(it.get("qty", 1)),
+                "unit_price": safe_float(it.get("unit_price", 0)),
+                "amount": safe_int(it.get("qty", 1)) * safe_float(it.get("unit_price", 0)),
+            }
+            for it in items_list
+        ]
+
+        st.success("บันทึกข้อมูลเรียบร้อยแล้ว")
+        st.json({
+            "store_name": extracted_json.get("store_name", "—"),
+            "receipt_no": extracted_json.get("receipt_no", "—"),
+            "date": extracted_json.get("date", "—"),
+            "items": export_items,
+            "subtotal": safe_float(extracted_json.get("subtotal", 0)),
+            "vat": safe_float(extracted_json.get("vat", 0)),
+            "total": safe_float(extracted_json.get("total", 0)),
+        })
+
     st.markdown('<div class="result-wrapper">', unsafe_allow_html=True)
     col_left, col_right = st.columns([1, 1])
 
@@ -390,19 +404,6 @@ else:
         # ── controls row (back + zoom) ──
         components.html(build_img_controls_html(), height=58, scrolling=False)
 
-        # hidden back button  (ถูกกดโดย postMessage JS)
-        st.markdown("""
-        <style>
-        [data-testid="stBaseButton-secondary"]:has(p:contains("__back__")),
-        button p { }
-        .hide-btn > div { visibility:hidden; height:0; overflow:hidden; }
-        </style>
-        """, unsafe_allow_html=True)
-        st.markdown('<div class="hide-btn">', unsafe_allow_html=True)
-        if st.button("__back__", key="back_btn"):
-            reset_app(); st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
     # ════════════════════════════════════════
     # RIGHT
     # ════════════════════════════════════════
@@ -417,30 +418,5 @@ else:
                             height=card_height, scrolling=False)
 
             components.html(build_action_bar_html(), height=58, scrolling=False)
-
-            # hidden export button
-            st.markdown('<div class="hide-btn">', unsafe_allow_html=True)
-            if st.button("__export__", key="export_btn"):
-                items_list = extracted_json.get("items", []) or []
-                export_items = [
-                    {
-                        "name":       it.get("name", ""),
-                        "qty":        safe_int(it.get("qty", 1)),
-                        "unit_price": safe_float(it.get("unit_price", 0)),
-                        "amount":     safe_int(it.get("qty", 1)) * safe_float(it.get("unit_price", 0)),
-                    }
-                    for it in items_list
-                ]
-                st.success("บันทึกข้อมูลเรียบร้อยแล้ว")
-                st.json({
-                    "store_name": extracted_json.get("store_name", "—"),
-                    "receipt_no": extracted_json.get("receipt_no",  "—"),
-                    "date":       extracted_json.get("date",        "—"),
-                    "items":      export_items,
-                    "subtotal":   safe_float(extracted_json.get("subtotal", 0)),
-                    "vat":        safe_float(extracted_json.get("vat",      0)),
-                    "total":      safe_float(extracted_json.get("total",    0)),
-                })
-            st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
