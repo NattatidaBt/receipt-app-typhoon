@@ -2,6 +2,14 @@ import cv2
 import streamlit as st
 import re
 
+from llm_engine import call_typhoon_llm
+from ocr_engine import (
+    deskew_image,
+    load_image_or_pdf,
+    process_method_4_sharpening,
+    run_typhoon_ocr,
+)
+
 # =========================================================
 # PAGE CONFIG
 # =========================================================
@@ -9,14 +17,6 @@ st.set_page_config(
     page_title="RecAipt - Receipt scanning tools",
     layout="wide",
     initial_sidebar_state="collapsed"
-)
-
-from llm_engine import call_typhoon_llm
-from ocr_engine import (
-    deskew_image,
-    load_image_or_pdf,
-    process_method_4_sharpening,
-    run_typhoon_ocr,
 )
 
 # =========================================================
@@ -28,6 +28,7 @@ st.markdown("""
 /* =========================================================
    HIDE STREAMLIT DEFAULT UI
 ========================================================= */
+
 header,
 footer,
 [data-testid="stToolbar"],
@@ -39,21 +40,25 @@ footer,
 }
 
 /* =========================================================
-   🔥 บังคับล้างเศษปุ่มดั้งเดิม โครงไอคอน และตัวอักษรส่วนเกิน 100%
+   🔥 บังคับซ่อนเศษปุ่ม Upload และคำอธิบายดั้งเดิมออกไปอย่างถาวร 100%
 ========================================================= */
+
 [data-testid="stFileUploaderDropzoneInputButton"],
 [data-testid="stFileUploaderFileSize"],
 [data-testid="stFileUploaderFileHeader"],
 [data-testid="stFileUploaderDeleteBtn"],
 [data-testid="stFileUploaderFileName"],
 [data-testid="stFileUploaderFile"],
-[data-testid="stFileUploaderDropzone"] svg,
+[data-testid="stFileUploaderDropzoneInstructions"],
 small[data-testid="stWidgetLabel-help"],
-.stFileUploaderSection,
-.st-emotion-cache-12w0qpk, 
-.st-emotion-cache-9ycgxx,
-.st-emotion-cache-167576q,
-.st-emotion-cache-1er4887,
+.stFileUploaderSection {
+    display: none !important;
+}
+
+/* ปลดล็อกทำลายไอคอนรูปก้อนเมฆอัปโหลดดั้งเดิมที่แอบซ้อนอยู่หลังใบเสร็จ */
+[data-testid="stFileUploaderDropzone"] svg {
+    display: none !important;
+}
 div[data-testid="stFileUploaderDropzone"] > div {
     display: none !important;
 }
@@ -61,11 +66,12 @@ div[data-testid="stFileUploaderDropzone"] > div {
 /* =========================================================
    GLOBAL APP STYLE
 ========================================================= */
+
 .stApp {
     background-color: #FFF3F7 !important;
 }
 
-/* ปรับแต่งระยะขอบหน้าจอหลัก */
+/* ปรับสมดุลระยะสัดส่วนขอบหน้าจอหลัก */
 .block-container {
     max-width: 100% !important;
     padding-top: 1rem !important;
@@ -77,6 +83,7 @@ div[data-testid="stFileUploaderDropzone"] > div {
 /* =========================================================
    HEADER BAR
 ========================================================= */
+
 .header-bar {
     display: flex;
     justify-content: space-between;
@@ -109,6 +116,7 @@ div[data-testid="stFileUploaderDropzone"] > div {
 /* =========================================================
    HERO SECTION
 ========================================================= */
+
 .hero-title {
     text-align: center;
     color: #4A2E35;
@@ -126,8 +134,9 @@ div[data-testid="stFileUploaderDropzone"] > div {
 }
 
 /* =========================================================
-   FILE UPLOADER FRAME
+   FILE UPLOADER
 ========================================================= */
+
 section[data-testid="stFileUploader"] {
     max-width: 850px;
     margin: auto;
@@ -148,8 +157,9 @@ section[data-testid="stFileUploader"] > div {
 }
 
 /* =========================================================
-   CUSTOM UPLOAD CONTENT (หน้ากากมินิมอลจำลอง)
+   CUSTOM UPLOAD CONTENT (หน้ากากมินิมอลสีชมพู)
 ========================================================= */
+
 .upload-overlay {
     position: relative;
     margin-top: -215px;
@@ -173,8 +183,9 @@ section[data-testid="stFileUploader"] > div {
 }
 
 /* =========================================================
-   RESULT WRAPPER & LAYOUT
+   RESULT WRAPPER & CONTAINERS
 ========================================================= */
+
 .result-wrapper {
     background: white;
     border-radius: 32px;
@@ -189,7 +200,6 @@ div[data-testid="stHorizontalBlock"] {
     align-items: flex-start !important;
 }
 
-/* การ์ดรายละเอียดฟอร์มฝั่งขวา */
 .receipt-card {
     background-color: #FFF6F8;
     border-radius: 24px;
@@ -198,8 +208,9 @@ div[data-testid="stHorizontalBlock"] {
 }
 
 /* =========================================================
-   TEXT & NUMBER INPUTS
+   INPUT ELEMENTS
 ========================================================= */
+
 .stTextInput input,
 .stNumberInput input {
     background-color: white !important;
@@ -224,8 +235,9 @@ div[data-testid="stForm"] {
 }
 
 /* =========================================================
-   FORM SUBMIT & BACK BUTTONS
+   BUTTON ACTIONS
 ========================================================= */
+
 button[kind="formSubmit"] {
     background-color: #F8D7E3 !important;
     color: #A35271 !important;
@@ -252,11 +264,12 @@ div.stButton > button {
     border: none !important;
     font-weight: bold !important;
 }
+
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# HEADER BAR COMPONENT
+# HEADER
 # =========================================================
 st.markdown("""
 <div class="header-bar">
@@ -270,9 +283,31 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ฟังก์ชันสำหรับล้างค่าระบบเมื่อกดย้อนกลับ
+# =========================================================
+# RESET FUNCTION
+# =========================================================
 def reset_app():
     st.session_state.clear()
+
+
+# =========================================================
+# SAFE FLOAT
+# =========================================================
+def safe_float(value, default=0.0):
+    try:
+        return float(str(value).replace(",", "").strip())
+    except:
+        return default
+
+
+# =========================================================
+# SAFE INT
+# =========================================================
+def safe_int(value, default=1):
+    try:
+        return int(float(str(value).replace(",", "").strip()))
+    except:
+        return default
 
 
 # =========================================================
@@ -286,7 +321,6 @@ if "processed_img" not in st.session_state or st.session_state.get("file_uploade
 
     uploaded_file = st.file_uploader("", type=["jpg", "jpeg", "png", "pdf"], key="uploader_widget")
 
-    # ส่วนซ้อนทับเพื่อสร้างฟอนต์และไอคอนมินิมอลจำลอง
     st.markdown("""
     <div class="upload-overlay">
         <div class="custom-upload-box">
@@ -297,7 +331,7 @@ if "processed_img" not in st.session_state or st.session_state.get("file_uploade
     """, unsafe_allow_html=True)
 
     # =====================================================
-    # OCR PIPELINE PROCESS
+    # OCR PIPELINE
     # =====================================================
     if uploaded_file is not None:
         st.session_state["file_uploaded"] = uploaded_file
@@ -307,7 +341,7 @@ if "processed_img" not in st.session_state or st.session_state.get("file_uploade
         with st.spinner("⏳ Processing image..."):
             img = load_image_or_pdf(file_bytes, file_name)
             if img is None:
-                st.error("❌ Unsupported file format")
+                st.error("❌ Unsupported file")
                 st.stop()
 
             deskewed_img = deskew_image(img)
@@ -319,7 +353,7 @@ if "processed_img" not in st.session_state or st.session_state.get("file_uploade
             st.session_state["raw_text"] = raw_text
 
         if "[ERROR]" in raw_text or not raw_text.strip():
-            st.error("❌ OCR Operation Failed")
+            st.error("❌ OCR failed")
             st.session_state.clear()
         else:
             with st.spinner("🤖 Structuring data..."):
@@ -328,21 +362,20 @@ if "processed_img" not in st.session_state or st.session_state.get("file_uploade
             st.rerun()
 
 # =========================================================
-# PAGE 2 : RESULT DASHBOARD
+# PAGE 2 : RESULT PAGE
 # =========================================================
 else:
     processed_img = st.session_state["processed_img"]
     raw_text = st.session_state["raw_text"]
     extracted_json = st.session_state["extracted_json"]
 
-    # ปุ่มกดย้อนกลับสไตล์มินิมอลแบบจำลองตามข้อกำหนด
     st.button("←", key="back_to_upload", on_click=reset_app)
 
     st.markdown('<div class="result-wrapper">', unsafe_allow_html=True)
     col_left, col_right = st.columns([1, 1])
 
     # -----------------------------------------------------
-    # ฝั่งซ้าย: แสดงผลรูปภาพเอกสารอ้างอิง
+    # ฝั่งซ้าย: รูปภาพใบเสร็จอ้างอิง
     # -----------------------------------------------------
     with col_left:
         if len(processed_img.shape) == 2:
@@ -356,12 +389,16 @@ else:
             st.code(raw_text, language="text")
 
     # -----------------------------------------------------
-    # ฝั่งขวา: การ์ดฟอร์มดิจิทัล (รายละเอียดใบเสร็จ)
+    # ฝั่งขวา: รายละเอียดแบบฟอร์มยืนยันข้อมูลดิจิทัล
     # -----------------------------------------------------
     with col_right:
         st.markdown('<div class="receipt-card">', unsafe_allow_html=True)
-        st.markdown('<h3 style="text-align:center; color:#4A2E35; margin-bottom:25px;">รายละเอียดใบเสร็จ</h3>',
-                    unsafe_allow_html=True)
+
+        st.markdown("""
+        <h3 style="text-align:center; color:#4A2E35; margin-bottom:25px;">
+            รายละเอียดใบเสร็จ
+        </h3>
+        """, unsafe_allow_html=True)
 
         if "error" in extracted_json:
             st.error(extracted_json["error"])
@@ -378,13 +415,19 @@ else:
 
                 for idx, item in enumerate(items_list):
                     c1, c2, c3 = st.columns([5, 2, 3])
+
                     with c1:
                         i_name = st.text_input(f"รายการ #{idx + 1}", value=item.get("name", ""), key=f"n_{idx}")
+
+                    raw_qty = item.get("qty", 1)
+                    qty_value = safe_int(raw_qty)
                     with c2:
-                        i_qty = st.number_input("จำนวน", value=int(float(item.get("qty", 1))), step=1, key=f"q_{idx}")
+                        i_qty = st.number_input("จำนวน", value=qty_value, step=1, key=f"q_{idx}")
+
+                    raw_price = item.get("unit_price", 0)
+                    price_value = safe_float(raw_price)
                     with c3:
-                        i_price = st.number_input("ราคา", value=float(item.get("unit_price", 0)), step=0.5,
-                                                  key=f"p_{idx}")
+                        i_price = st.number_input("ราคา", value=price_value, step=0.5, key=f"p_{idx}")
 
                     edited_items.append({
                         "name": i_name,
@@ -395,9 +438,14 @@ else:
 
                 st.markdown("---")
 
-                subtotal = st.number_input("ยอดรวมก่อนภาษี", value=float(extracted_json.get("subtotal", 0)), step=0.5)
-                vat = st.number_input("VAT 7%", value=float(extracted_json.get("vat", 0)), step=0.1)
-                total = st.number_input("ยอดรวมทั้งหมด", value=float(extracted_json.get("total", 0)), step=0.5)
+                subtotal_value = safe_float(extracted_json.get("subtotal", 0))
+                subtotal = st.number_input("ยอดรวมก่อนภาษี", value=subtotal_value, step=0.5)
+
+                vat_value = safe_float(extracted_json.get("vat", 0))
+                vat = st.number_input("VAT 7%", value=vat_value, step=0.1)
+
+                total_value = safe_float(extracted_json.get("total", 0))
+                total = st.number_input("ยอดรวมทั้งหมด", value=total_value, step=0.5)
 
                 save_btn = st.form_submit_button("📤 ส่งออก")
 
