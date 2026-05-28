@@ -1,6 +1,5 @@
 import cv2
 import streamlit as st
-import streamlit.components.v1 as components
 
 # =========================================================
 # PAGE CONFIG
@@ -20,66 +19,11 @@ from ocr_engine import (
 )
 
 # =========================================================
-# INJECT CSS + JS (stable กว่า st.markdown สำหรับ uploader)
-# =========================================================
-components.html("""
-<script>
-function applyStyles() {
-    // ── ซ่อน Streamlit chrome ──
-    const hide = ['header','footer','#MainMenu',
-        '[data-testid="stToolbar"]','[data-testid="stSidebar"]'];
-    hide.forEach(sel => {
-        document.querySelectorAll(sel).forEach(el => {
-            el.style.cssText = 'visibility:hidden!important;display:none!important;height:0!important';
-        });
-    });
-
-    // ── Uploader dropzone ──
-    document.querySelectorAll('[data-testid="stFileUploaderDropzone"]').forEach(el => {
-        el.style.cssText = `
-            background: white !important;
-            border: 2px dashed #F4C6D5 !important;
-            border-radius: 28px !important;
-            min-height: 220px !important;
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            justify-content: center !important;
-            cursor: pointer !important;
-        `;
-        // ซ่อน SVG icon เดิม
-        el.querySelectorAll('svg').forEach(s => s.style.display = 'none');
-    });
-
-    // ── ปุ่ม Browse เดิม ──
-    document.querySelectorAll('[data-testid="stFileUploaderDropzone"] button').forEach(btn => {
-        btn.style.cssText = `
-            background: #F8D7E3 !important;
-            color: #A35271 !important;
-            border: none !important;
-            border-radius: 12px !important;
-            font-weight: 600 !important;
-            padding: 8px 24px !important;
-        `;
-    });
-}
-
-// รัน 3 รอบเพื่อให้แน่ใจว่า DOM โหลดครบ
-applyStyles();
-setTimeout(applyStyles, 500);
-setTimeout(applyStyles, 1500);
-
-// Observer สำหรับ dynamic re-render
-const observer = new MutationObserver(applyStyles);
-observer.observe(document.body, { childList: true, subtree: true });
-</script>
-""", height=0)
-
-# =========================================================
-# GLOBAL CSS (ส่วนที่ไม่เกี่ยวกับ uploader)
+# GLOBAL NATIVE CSS DESIGN (RecAipt Pixel-Perfect Theme)
 # =========================================================
 st.markdown("""
 <style>
+/* ── 1. ลบโครงสร้างแถบเครื่องมือดั้งเดิมรอบแอปพลิเคชันออกเกลี้ยง ── */
 header, footer, #MainMenu,
 [data-testid="stToolbar"],
 [data-testid="stSidebar"] {
@@ -88,14 +32,17 @@ header, footer, #MainMenu,
     height: 0 !important;
 }
 
-.stApp { background-color: #FFF3F7 !important; }
+/* ── 2. ตั้งค่าโทนสีพื้นหลังขาวอมชมพูพาสเทลตามแนวทางรายงานโครงงาน ── */
+.stApp { 
+    background-color: #FFF2F6 !important; 
+}
 
 .block-container {
     max-width: 100% !important;
     padding: 1.5rem 3rem !important;
 }
 
-/* Header */
+/* ── 3. ดีไซน์แถบก้อนกล่องขาวด้านบน (Header Bar) ตามเล่มหน้า 41 ── */
 .header-bar {
     display: flex;
     justify-content: space-between;
@@ -104,7 +51,7 @@ header, footer, #MainMenu,
     margin-bottom: 40px;
     background: #FFFFFF;
     border-radius: 18px;
-    box-shadow: 0 2px 12px rgba(74,46,53,0.06);
+    box-shadow: 0 4px 15px rgba(74, 46, 53, 0.02);
 }
 .logo-text {
     color: #4A2E35;
@@ -123,73 +70,173 @@ header, footer, #MainMenu,
     font-weight: 500;
 }
 
-/* Hero */
+/* หัวข้ออักษรอธิบายใหญ่ตรงกลาง */
 .hero-title {
     text-align: center;
     color: #4A2E35;
     font-size: 32px;
     font-weight: 500;
-    margin: 20px 0 10px;
+    margin: 35px 0 10px;
 }
 .hero-subtitle {
     text-align: center;
     color: #C29BA4;
     font-size: 15px;
-    margin-bottom: 36px;
+    margin-bottom: 45px;
 }
 
-/* Uploader container width */
+/* =========================================================
+   🔥 4. บังคับล็อกพิกัดกล่องสแกนอัปโหลดไฟล์ (ตรงตามดีไซน์ 100%)
+========================================================= */
 section[data-testid="stFileUploader"] {
     max-width: 780px;
-    margin: 0 auto 32px;
+    margin: 0 auto !important;
+    position: relative !important;
 }
 
-/* Result wrapper */
-.result-wrapper {
-    background: white;
-    border-radius: 26px;
-    padding: 26px;
-    border: 1px solid #F4E0E8;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.03);
+/* ดึงโครงกล่องด้านนอกสุดให้กางตัวเป็นสีขาวผืนผ้า พร้อมเส้นประสีชมพูล้อมรอบ */
+section[data-testid="stFileUploader"] > div {
+    background-color: #FFFFFF !important;
+    border: 2px dashed #F4C6D5 !important;
+    border-radius: 28px !important;
+    height: 240px !important;
+    min-height: 240px !important;
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 12px 35px rgba(74, 46, 53, 0.03) !important;
+    padding: 0 !important;
 }
+
+/* ซ่อนชิ้นส่วนเศษปุ่มดั้งเดิม ข้อมูลตัวเลขไฟล์ และโครงไอคอนก้อนเมฆออกถาวร */
+div[data-testid="stFileUploaderDropzone"] svg,
+div[data-testid="stFileUploaderDropzoneInstructions"],
+[data-testid="stFileUploaderFileHeader"],
+[data-testid="stFileUploaderDeleteBtn"],
+[data-testid="stFileUploaderFileName"],
+[data-testid="stFileUploaderFile"],
+[data-testid="stFileUploaderDropzoneInputButton"],
+[data-testid="stFileUploaderFileSize"],
+small[data-testid="stWidgetLabel-help"],
+.stFileUploaderSection {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+}
+
+/* ขยายแผ่นพื้นที่รับอินพุต Dropzone ให้โปร่งแสงเต็มกรอบขาวเพื่อรองรับการลากวางไฟล์ */
+div[data-testid="stFileUploaderDropzone"] {
+    background: transparent !important;
+    border: none !important;
+    width: 100% !important;
+    height: 240px !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 20 !important;
+    cursor: pointer !important;
+}
+div[data-testid="stFileUploaderDropzone"] button {
+    width: 100% !important;
+    height: 100% !important;
+    opacity: 0 !important;
+    cursor: pointer !important;
+}
+
+/* 📌 สร้างหน้ากากตัวจำลองเอกสารพาสเทลมินิมอลล็อกระนาบกึ่งกลางกล่องขาวอย่างเที่ยงตรง */
+section[data-testid="stFileUploader"]::after {
+    content: "📄\\A\\A Choose or paste a file here (image or PDF)";
+    white-space: pre-wrap;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #A3858C;
+    font-size: 15px;
+    text-align: center;
+    font-weight: 400;
+    z-index: 10;
+    pointer-events: none;
+    line-height: 1.2;
+}
+/* ขยายขนาดเฉพาะไอคอนแถวแรกให้ใหญ่สะดุดตาตาม Mockup เล่มหน้า 41 */
+section[data-testid="stFileUploader"]::first-line {
+    font-size: 52px;
+    color: #4A2E35;
+}
+
+/* =========================================================
+   5. RESULT DASHBOARD VIEWPORT (ล้างช่องว่างส่วนเกินใต้ภาพออกถาวร)
+========================================================= */
+.result-wrapper {
+    background: #FFFFFF;
+    border-radius: 32px;
+    padding: 35px;
+    max-width: 1450px;
+    margin: 0 auto !important;
+    box-shadow: 0 12px 40px rgba(74, 46, 53, 0.04);
+}
+
 div[data-testid="stHorizontalBlock"] {
-    gap: 26px !important;
+    gap: 30px !important;
     align-items: flex-start !important;
 }
 
-/* Image card */
 .img-card-wrap {
-    background: #FAFAFA;
-    border-radius: 18px;
-    padding: 14px;
-    border: 1px solid #F4C6D5;
+    background: #FFFFFF;
+    border-radius: 24px;
+    padding: 15px;
+    border: 1px solid #F8D7E3;
 }
 
-/* Streamlit buttons */
+/* สยบล้างระยะห่างและ Padding ของกรอบ Iframe ข้อมูลฝั่งขวา */
+div[data-testid="stHtml"] {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+iframe {
+    display: block !important;
+    margin: 0 auto !important;
+    border-radius: 24px !important;
+}
+
+/* =========================================================
+   6. STREAMLIT BUTTONS & ACTIONS DESIGN
+========================================================= */
 div[data-testid="stButton"] > button {
     background: #F8D7E3 !important;
     color: #A35271 !important;
     border: none !important;
     border-radius: 12px !important;
     font-weight: 700 !important;
+    transition: all 0.2s ease !important;
 }
+div[data-testid="stButton"] > button:hover {
+    background-color: #D47A9A !important;
+    color: white !important;
+}
+
 .back-wrap div[data-testid="stButton"] > button {
-    width: 42px !important;
-    height: 42px !important;
+    width: 44px !important;
+    height: 44px !important;
     font-size: 18px !important;
     padding: 0 !important;
-    margin-top: 10px !important;
+    margin-bottom: 15px !important;
 }
 .export-wrap div[data-testid="stButton"] > button {
     width: 100% !important;
-    height: 44px !important;
-    font-size: 14px !important;
+    height: 48px !important;
+    font-size: 15px !important;
+    margin-top: 15px !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# HEADER
+# HEADER COMPONENT
 # =========================================================
 st.markdown("""
 <div class="header-bar">
@@ -218,7 +265,7 @@ def safe_int(value, default=1):
         return default
 
 def build_detail_card_html(extracted_json):
-    """สร้าง HTML ของ detail card — render ด้วย components.html() เพื่อหลีกเลี่ยง Streamlit escape"""
+    """สร้างโครงสร้างฟอร์มรายละเอียดใบเสร็จสีชมพูพาสเทลตามเอกสารเล่มหน้า 42"""
     merchant     = extracted_json.get("store_name",   "—") or "—"
     receipt_no   = extracted_json.get("receipt_no",   "—") or "—"
     date_val     = extracted_json.get("date",         "—") or "—"
@@ -246,10 +293,8 @@ def build_detail_card_html(extracted_json):
     if not rows_html:
         rows_html = '<tr><td colspan="5" style="text-align:center;color:#C29BA4;padding:16px 0">ไม่พบรายการสินค้า</td></tr>'
 
-    subtotal_row = (f'<div class="t-row"><span>ยอดก่อน VAT :</span>'
-                    f'<span>{subtotal_val:,.2f} บาท</span></div>') if subtotal_val else ""
-    vat_row      = (f'<div class="t-row"><span>VAT 7% :</span>'
-                    f'<span>{vat_val:,.2f} บาท</span></div>') if vat_val else ""
+    subtotal_row = f'<div class="t-row"><span>ยอดก่อน VAT :</span><span>{subtotal_val:,.2f} บาท</span></div>' if subtotal_val else ""
+    vat_row      = f'<div class="t-row"><span>VAT 7% :</span><span>{vat_val:,.2f} บาท</span></div>' if vat_val else ""
 
     return f"""<!DOCTYPE html>
 <html>
@@ -257,64 +302,32 @@ def build_detail_card_html(extracted_json):
 <meta charset="utf-8">
 <style>
 * {{ box-sizing:border-box; margin:0; padding:0; }}
-body {{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:transparent; }}
-.card {{ background:white; border-radius:18px; border:1px solid #F4C6D5; overflow:hidden; }}
-.dc-header {{
-    display:flex; justify-content:space-between; align-items:center;
-    padding:14px 18px; border-bottom:1px solid #F4E0E8;
-}}
-.dc-title {{ font-size:15px; font-weight:700; color:#4A2E35; }}
-.icon-btn {{
-    background:transparent; border:none; cursor:pointer;
-    font-size:17px; padding:3px 6px; border-radius:6px; color:#C97D98;
-}}
-.icon-btn:hover {{ background:#FFF0F5; }}
-.dc-body {{ padding:16px 18px; }}
-.badge {{
-    display:inline-block; background:#FFF0F5; color:#A35271;
-    border:1px solid #F4C6D5; border-radius:8px;
-    font-size:12px; padding:4px 12px; margin-bottom:16px;
-}}
-.info-row {{ display:flex; gap:8px; font-size:13px; margin-bottom:9px; align-items:baseline; }}
-.lbl {{ color:#C29BA4; min-width:120px; flex-shrink:0; }}
+body {{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:transparent; padding:2px; }}
+.card {{ background:#FFF6F8; border-radius:24px; border:1px solid #F8D7E3; padding:28px; overflow:hidden; }}
+.dc-header {{ display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; }}
+.dc-title {{ font-size:18px; font-weight:700; color:#4A2E35; width:100%; text-align:center; }}
+.dc-body {{ margin-top:10px; }}
+.badge {{ display:inline-block; background:#FFF0F5; color:#A35271; border:1px solid #F4C6D5; border-radius:8px; font-size:12px; padding:4px 12px; margin-bottom:16px; }}
+.info-row {{ display:flex; gap:8px; font-size:13px; margin-bottom:12px; align-items:baseline; }}
+.lbl {{ color:#7A5A63; min-width:120px; flex-shrink:0; font-weight:500; }}
 .val {{ color:#4A2E35; font-weight:600; }}
-.divider {{ border:none; border-top:1px solid #F4E0E8; margin:14px 0; }}
-.sec-lbl {{ font-size:12px; color:#C29BA4; margin-bottom:8px; }}
+.divider {{ border:none; border-top:1px solid #F4E0E8; margin:16px 0; }}
+.sec-lbl {{ font-size:13px; color:#4A2E35; font-weight:bold; margin-bottom:12px; }}
 .tbl {{ width:100%; border-collapse:collapse; font-size:13px; }}
-.tbl th {{
-    color:#C29BA4; font-weight:400; padding:4px 6px 9px;
-    border-bottom:1px solid #F4E0E8; text-align:center;
-}}
+.tbl th {{ color:#C29BA4; font-weight:400; padding:4px 6px 9px; border-bottom:1px solid #F4E0E8; text-align:center; }}
 .tbl th:nth-child(2) {{ text-align:left; }}
-.tbl td {{ padding:8px 6px; color:#4A2E35; text-align:center; }}
+.tbl td {{ padding:8px 6px; color:#4A2E35; text-align:center; border-bottom:1px dashed #FFF0F5; }}
 .tbl td:nth-child(2) {{ text-align:left; }}
 .num {{ color:#C29BA4; font-size:12px; }}
-.totals {{ padding-top:4px; }}
-.t-row {{
-    display:flex; justify-content:space-between;
-    font-size:13px; color:#A07A85; margin-bottom:7px;
-}}
-.grand {{ color:#4A2E35; font-weight:700; font-size:14px; margin-bottom:0; }}
-.dc-footer {{
-    display:flex; justify-content:flex-end; align-items:center;
-    gap:8px; padding:11px 18px 15px; border-top:1px solid #F4E0E8;
-}}
-.f-btn {{
-    background:white; border:1px solid #F4C6D5; color:#A35271;
-    border-radius:10px; width:36px; height:36px; font-size:15px;
-    cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
-}}
-.f-btn:hover {{ background:#FFF0F5; }}
+.totals {{ padding-top:14px; }}
+.t-row {{ display:flex; justify-content:space-between; font-size:13px; color:#A07A85; margin-bottom:8px; }}
+.grand {{ color:#4A2E35; font-weight:700; font-size:15px; }}
 </style>
 </head>
 <body>
 <div class="card">
   <div class="dc-header">
     <span class="dc-title">รายละเอียดใบเสร็จ</span>
-    <div>
-      <button class="icon-btn" title="แก้ไข">✏️</button>
-      <button class="icon-btn" title="ลบ">🗑️</button>
-    </div>
   </div>
   <div class="dc-body">
     <span class="badge">{receipt_type}</span>
@@ -322,7 +335,7 @@ body {{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; back
     <div class="info-row"><span class="lbl">เลขที่ใบเสร็จ :</span><span class="val">{receipt_no}</span></div>
     <div class="info-row"><span class="lbl">วันที่ :</span><span class="val">{date_val}</span></div>
     <hr class="divider">
-    <div class="sec-lbl">รายการสินค้า</div>
+    <div class="sec-lbl">📦 รายการสินค้า</div>
     <table class="tbl">
       <thead>
         <tr>
@@ -345,10 +358,6 @@ body {{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; back
       </div>
     </div>
   </div>
-  <div class="dc-footer">
-    <button class="f-btn" title="คัดลอก">📋</button>
-    <button class="f-btn" title="แชร์">↑</button>
-  </div>
 </div>
 </body>
 </html>"""
@@ -359,10 +368,8 @@ body {{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; back
 # =========================================================
 if "processed_img" not in st.session_state or st.session_state.get("file_uploaded") is None:
 
-    st.markdown("<div class='hero-title'>Receipt scanning and data collection tools</div>",
-                unsafe_allow_html=True)
-    st.markdown("<div class='hero-subtitle'>Upload an image or PDF of your receipt to store it using OCR</div>",
-                unsafe_allow_html=True)
+    st.markdown("<div class='hero-title'>Receipt scanning and data collection tools</div>", unsafe_allow_html=True)
+    st.markdown("<div class='hero-subtitle'>Upload an image or PDF of your receipt to store it using OCR</div>", unsafe_allow_html=True)
 
     uploaded_file = st.file_uploader(
         "",
@@ -418,6 +425,10 @@ else:
 
     # ── LEFT: รูปใบเสร็จ ──────────────────────────────────
     with col_left:
+        st.markdown('<div class="back-wrap">', unsafe_allow_html=True)
+        st.button("←", key="back_btn", on_click=reset_app)
+        st.markdown('</div>', unsafe_allow_html=True)
+
         st.markdown('<div class="img-card-wrap">', unsafe_allow_html=True)
 
         if len(processed_img.shape) == 2:
@@ -430,10 +441,6 @@ else:
         with st.expander("📄 Raw OCR Text"):
             st.code(raw_text, language="text")
 
-        st.markdown('<div class="back-wrap">', unsafe_allow_html=True)
-        st.button("←", key="back_btn", on_click=reset_app)
-        st.markdown('</div>', unsafe_allow_html=True)
-
         st.markdown('</div>', unsafe_allow_html=True)  # img-card-wrap
 
     # ── RIGHT: รายละเอียดใบเสร็จ ─────────────────────────
@@ -441,11 +448,11 @@ else:
         if has_error:
             st.error(f"❌ {extracted_json['error']}")
         else:
-            # คำนวณความสูง card
+            # คำนวณความสูง card ให้สมดุลพอดีกับฟอร์ม
             items_count = len(extracted_json.get("items", []) or [])
-            card_height = 500 + max(0, items_count - 3) * 38
+            card_height = 430 + max(0, items_count - 2) * 38
 
-            # render HTML ผ่าน iframe เพื่อหลีกเลี่ยง Streamlit escaping
+            # render HTML ผ่าน iframe
             components.html(
                 build_detail_card_html(extracted_json),
                 height=card_height,
