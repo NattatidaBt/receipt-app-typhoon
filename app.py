@@ -12,7 +12,7 @@ from ocr_engine import (
 # 1. ตั้งค่าหน้าต่างระบบหลัก (ซ่อนเมนูและ Sidebar ทั้งหมด)
 st.set_page_config(page_title="RecAipt - Receipt scanning tools", layout="wide", initial_sidebar_state="collapsed")
 
-# 🎨 2. ประกาศสไตล์ CSS ปรับแต่งรูปลักษณ์ให้เหมือนต้นแบบ Mockup และลบองค์ประกอบส่วนเกิน
+# 🎨 2. ประกาศสไตล์ CSS ปรับแต่งรูปลักษณ์และซ่อนส่วนเกินของพัสดุกล่อง Streamlit ทุกสถานะ
 st.markdown("""
     <style>
     /* ซ่อนแถบเครื่องมือด้านบน ปุ่มเมนู และฟุตเตอร์ของ Streamlit ออกให้หมด 100% */
@@ -22,14 +22,14 @@ st.markdown("""
         display: none !important;
     }
 
-    /* 🔴 สั่งซ่อนปุ่ม Upload ดั้งเดิม ตัวเลขจำกัดขนาดไฟล์ และคำอธิบายย่อยของ Streamlit ทั้งหมด */
+    /* 🔴 สั่งซ่อนส่วนประกอบภายในของ stFileUploader ทุกชิ้นอย่างเด็ดขาด (ทั้งก่อนและหลังอัปโหลด) */
     [data-testid="stFileUploaderDropzoneInputButton"],
     [data-testid="stFileUploaderFileSize"],
-    small[data-testid="stWidgetLabel-help"] {
-        display: none !important;
-    }
-
-    /* สกัดซ่อนข้อความจำพวก Drag and drop file here ของบล็อกหลักเพื่อความคลีน */
+    [data-testid="stFileUploaderFileName"],
+    [data-testid="stFileUploaderDeleteBtn"],
+    [data-testid="stFileUploaderFile"],
+    small[data-testid="stWidgetLabel-help"],
+    .stFileUploaderSection,
     div[data-testid="stFileUploaderDropzone"] > div {
         display: none !important;
     }
@@ -181,7 +181,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 🏢 ส่วนประกอบแถบกล่องสีขาวควบคุมโลโก้และภาษาด้านบนสุด (Header Bar)
+# 🏢 แถบ Header Bar ด้านบนสุด
 st.markdown("""
     <div class="header-bar">
         <div class="logo-text">📄 RecAipt</div>
@@ -189,18 +189,16 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# ระบบสลับการทำงานตาม State การอัปโหลดไฟล์
+# ระบบสลับหน้าการทำงาน (State Management)
 if st.session_state.get("file_uploaded") is None:
 
-    # 📌 หน้าแรก: ออกแบบคลีน มินิมอล ซ่อนปุ่ม Upload เรียบร้อย
+    # 📌 หน้าแรก: คลีน มินิมอล ไร้ปุ่มส่วนเกินแน่นอน
     st.markdown("<div class='hero-title'>Receipt scanning and data collection tools</div>", unsafe_allow_html=True)
     st.markdown("<div class='hero-subtitle'>Upload an image or PDF of your receipt to store it using OCR</div>",
                 unsafe_allow_html=True)
 
-    # วางตัวรับเอกสารหลัก
     uploaded_file = st.file_uploader("", type=["jpg", "jpeg", "png", "pdf"], key="uploader_widget")
 
-    # กล่องข้อความและไอคอนจำลองตรงกลางเฟรมประสีชมพู
     st.markdown("""
         <div style="margin-top: -135px; margin-bottom: 65px;" class="custom-upload-box">
             <div class="upload-icon">📄</div>
@@ -213,7 +211,7 @@ if st.session_state.get("file_uploaded") is None:
         st.rerun()
 
 else:
-    # 📌 หน้าสอง: หน้าต่างสกัดและจัดการผลลัพธ์ข้อมูลดิจิทัล
+    # 📌 หน้าสอง: แสดงผลแบบฟอร์มและการประมวลผลข้อมูลดิจิทัล
     uploaded_file = st.session_state["file_uploaded"]
     file_bytes = uploaded_file.read()
     file_name = uploaded_file.name
