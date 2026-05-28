@@ -1,10 +1,9 @@
 import cv2
-import numpy as np
 import streamlit as st
-from PIL import Image
+import streamlit.components.v1 as components
 
 # =========================================================
-# PAGE CONFIG (ซ่อนแถบเมนูและ Sidebar ทั้งหมด)
+# PAGE CONFIG
 # =========================================================
 st.set_page_config(
     page_title="RecAipt - Receipt scanning tools",
@@ -12,151 +11,191 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+from llm_engine import call_typhoon_llm
+from ocr_engine import (
+    deskew_image,
+    load_image_or_pdf,
+    process_method_4_sharpening,
+    run_typhoon_ocr,
+)
 
 # =========================================================
-# LOAD CSS & INJECT NATIVE CORE INTERFACE OVERRIDE
+# INJECT CSS + JS (stable กว่า st.markdown สำหรับ uploader)
 # =========================================================
-def load_css():
-    # รองรับการดึงไฟล์ assets/style.css ของกลุ่มคุณตามปกติ
-    try:
-        with open("assets/style.css", encoding="utf-8") as f:
-            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-    except:
-        pass
+components.html("""
+<script>
+function applyStyles() {
+    // ── ซ่อน Streamlit chrome ──
+    const hide = ['header','footer','#MainMenu',
+        '[data-testid="stToolbar"]','[data-testid="stSidebar"]'];
+    hide.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+            el.style.cssText = 'visibility:hidden!important;display:none!important;height:0!important';
+        });
+    });
 
+    // ── Uploader dropzone ──
+    document.querySelectorAll('[data-testid="stFileUploaderDropzone"]').forEach(el => {
+        el.style.cssText = `
+            background: white !important;
+            border: 2px dashed #F4C6D5 !important;
+            border-radius: 28px !important;
+            min-height: 220px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+        `;
+        // ซ่อน SVG icon เดิม
+        el.querySelectorAll('svg').forEach(s => s.style.display = 'none');
+    });
 
-load_css()
+    // ── ปุ่ม Browse เดิม ──
+    document.querySelectorAll('[data-testid="stFileUploaderDropzone"] button').forEach(btn => {
+        btn.style.cssText = `
+            background: #F8D7E3 !important;
+            color: #A35271 !important;
+            border: none !important;
+            border-radius: 12px !important;
+            font-weight: 600 !important;
+            padding: 8px 24px !important;
+        `;
+    });
+}
 
-# 🎨 แทรก CSS หลักเพื่อควบคุมกรอบประสีชมพูและซ่อนปุ่มดั้งเดิมอย่างถาวร 100% ทุกสเตตัส
+// รัน 3 รอบเพื่อให้แน่ใจว่า DOM โหลดครบ
+applyStyles();
+setTimeout(applyStyles, 500);
+setTimeout(applyStyles, 1500);
+
+// Observer สำหรับ dynamic re-render
+const observer = new MutationObserver(applyStyles);
+observer.observe(document.body, { childList: true, subtree: true });
+</script>
+""", height=0)
+
+# =========================================================
+# GLOBAL CSS (ส่วนที่ไม่เกี่ยวกับ uploader)
+# =========================================================
 st.markdown("""
 <style>
-/* ── 1. ลบเมนูและฟุตเตอร์ส่วนเกินของ Streamlit ออกเกลี้ยง ── */
-header, footer, [data-testid="stToolbar"], [data-testid="stSidebar"], #MainMenu {
+header, footer, #MainMenu,
+[data-testid="stToolbar"],
+[data-testid="stSidebar"] {
     visibility: hidden !important;
     display: none !important;
     height: 0 !important;
 }
 
-/* ── 2. คุมโทนสีพื้นหลังขาวอมชมพูพาสเทลตามรายงานโครงงาน ── */
-.stApp {
-    background-color: #FFF2F6 !important;
-}
+.stApp { background-color: #FFF3F7 !important; }
 
 .block-container {
     max-width: 100% !important;
     padding: 1.5rem 3rem !important;
 }
 
-/* ── 3. ล็อกมิติกราฟความสูงกล่องสแกนใบเสร็จ (Dropzone Container) ── */
-section[data-testid="stFileUploader"] {
-    max-width: 820px;
-    margin: 0 auto !important;
-    position: relative !important;
-    height: 250px !important;
-}
-
-/* บังคับวาดเฟรมสี่เหลี่ยมผืนผ้าสีขาว มีเส้นประประจุสีชมพูล้อมรอบ */
-section[data-testid="stFileUploader"] > div {
-    background-color: #FFFFFF !important;
-    border: 2px dashed #F4C6D5 !important;
-    border-radius: 28px !important;
-    height: 250px !important;
-    min-height: 250px !important;
-    position: relative !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    box-shadow: 0 12px 35px rgba(74, 46, 53, 0.03) !important;
-    padding: 0 !important;
-}
-
-/* สั่งทำลายและซ่อนปุ่ม Browse, ข้อความระบุขนาด และคำเตือนระบบดั้งเดิมออกทั้งหมด 100% */
-div[data-testid="stFileUploaderDropzone"] svg,
-div[data-testid="stFileUploaderDropzoneInstructions"],
-[data-testid="stFileUploaderFileHeader"],
-[data-testid="stFileUploaderDeleteBtn"],
-[data-testid="stFileUploaderFileName"],
-[data-testid="stFileUploaderFile"],
-[data-testid="stFileUploaderDropzoneInputButton"],
-[data-testid="stFileUploaderFileSize"],
-small[data-testid="stWidgetLabel-help"],
-.stFileUploaderSection {
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-}
-
-/* ยืดแผ่นกระดาน Dropzone ให้ใหญ่กางเต็มกรอบขาว */
-div[data-testid="stFileUploaderDropzone"] {
-    background: transparent !important;
-    border: none !important;
-    width: 100% !important;
-    height: 250px !important;
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    z-index: 20 !important;
-    cursor: pointer !important;
-}
-div[data-testid="stFileUploaderDropzone"] button {
-    width: 100% !important;
-    height: 100% !important;
-    opacity: 0 !important;
-    cursor: pointer !important;
-}
-
-/* 📌 หน้ากากจำลองจัดวางไอคอนเอกสารเดี่ยวและคำแนะนำมินิมอลกึ่งกลางเฟรมพอดีเป๊ะ */
-section[data-testid="stFileUploader"]::after {
-    content: "📄\\A\\A Choose or paste a file here (image or PDF)";
-    white-space: pre-wrap;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: #A3858C;
-    font-size: 15px;
-    text-align: center;
-    font-weight: 400;
-    z-index: 10;
-    pointer-events: none;
-    line-height: 1.3;
-}
-/* เจาะจงขยายฟอนต์ไอคอนใบเสร็จแถวแรกให้เด่นชัดน่าใช้งาน */
-section[data-testid="stFileUploader"]::first-line {
-    font-size: 52px;
-    color: #4A2E35;
-}
-
-/* ── 4. สยบส่วนเกินและ Iframe Margins ในหน้าแสดงผลลัพธ์ ── */
-div[data-testid="stHtml"] {
-    padding: 0 !important;
-    margin: 0 !important;
-}
-.result-wrapper {
+/* Header */
+.header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 28px;
+    margin-bottom: 40px;
     background: #FFFFFF;
-    border-radius: 32px;
-    padding: 35px;
-    max-width: 1450px;
-    margin: 0 auto !important;
-    box-shadow: 0 12px 40px rgba(74, 46, 53, 0.04);
+    border-radius: 18px;
+    box-shadow: 0 2px 12px rgba(74,46,53,0.06);
+}
+.logo-text {
+    color: #4A2E35;
+    font-size: 20px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.lang-pill {
+    background: #C97D98;
+    color: white;
+    padding: 7px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
 }
 
-/* ตกแต่งฟอร์มดีไซน์ปุ่มจัดเก็บให้สวยงามขึ้น */
+/* Hero */
+.hero-title {
+    text-align: center;
+    color: #4A2E35;
+    font-size: 32px;
+    font-weight: 500;
+    margin: 20px 0 10px;
+}
+.hero-subtitle {
+    text-align: center;
+    color: #C29BA4;
+    font-size: 15px;
+    margin-bottom: 36px;
+}
+
+/* Uploader container width */
+section[data-testid="stFileUploader"] {
+    max-width: 780px;
+    margin: 0 auto 32px;
+}
+
+/* Result wrapper */
+.result-wrapper {
+    background: white;
+    border-radius: 26px;
+    padding: 26px;
+    border: 1px solid #F4E0E8;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.03);
+}
+div[data-testid="stHorizontalBlock"] {
+    gap: 26px !important;
+    align-items: flex-start !important;
+}
+
+/* Image card */
+.img-card-wrap {
+    background: #FAFAFA;
+    border-radius: 18px;
+    padding: 14px;
+    border: 1px solid #F4C6D5;
+}
+
+/* Streamlit buttons */
 div[data-testid="stButton"] > button {
     background: #F8D7E3 !important;
     color: #A35271 !important;
     border: none !important;
     border-radius: 12px !important;
     font-weight: 700 !important;
-    height: 46px !important;
 }
-div[data-testid="stButton"] > button:hover {
-    background-color: #D47A9A !important;
-    color: white !important;
+.back-wrap div[data-testid="stButton"] > button {
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 18px !important;
+    padding: 0 !important;
+    margin-top: 10px !important;
+}
+.export-wrap div[data-testid="stButton"] > button {
+    width: 100% !important;
+    height: 44px !important;
+    font-size: 14px !important;
 }
 </style>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# HEADER
+# =========================================================
+st.markdown("""
+<div class="header-bar">
+    <div class="logo-text">📄 RecAipt</div>
+    <div class="lang-pill">English ▾</div>
+</div>
 """, unsafe_allow_html=True)
 
 
@@ -166,150 +205,276 @@ div[data-testid="stButton"] > button:hover {
 def reset_app():
     st.session_state.clear()
 
+def safe_float(value, default=0.0):
+    try:
+        return float(str(value).replace(",", "").strip())
+    except Exception:
+        return default
 
-def fake_ocr_result():
-    return {
-        "store_name": "7-Eleven ม.วลัยลักษณ์",
-        "receipt_no": "A102938",
-        "date": "2026-05-29",
-        "items": [
-            {"name": "Milk", "qty": 2, "unit_price": 25.0},
-            {"name": "Bread", "qty": 1, "unit_price": 35.0},
-            {"name": "Coffee", "qty": 1, "unit_price": 45.0}
-        ],
-        "subtotal": 130.0,
-        "vat": 9.1,
-        "total": 139.1
-    }
+def safe_int(value, default=1):
+    try:
+        return int(float(str(value).replace(",", "").strip()))
+    except Exception:
+        return default
 
+def build_detail_card_html(extracted_json):
+    """สร้าง HTML ของ detail card — render ด้วย components.html() เพื่อหลีกเลี่ยง Streamlit escape"""
+    merchant     = extracted_json.get("store_name",   "—") or "—"
+    receipt_no   = extracted_json.get("receipt_no",   "—") or "—"
+    date_val     = extracted_json.get("date",         "—") or "—"
+    receipt_type = extracted_json.get("receipt_type", "ใบกำกับภาษีอย่างย่อ") or "ใบกำกับภาษีอย่างย่อ"
+    items_list   = extracted_json.get("items", []) or []
+    subtotal_val = safe_float(extracted_json.get("subtotal", 0))
+    vat_val      = safe_float(extracted_json.get("vat",      0))
+    total_val    = safe_float(extracted_json.get("total",    0))
 
-# =========================================================
-# HEADER COMPONENT (กล่องสีขาวด้านบนเรียบหรู)
-# =========================================================
-st.markdown("""
-<div class="header-bar">
-    <div class="logo-text">📄 RecAipt</div>
-    <div class="lang-pill">English ▾</div>
+    rows_html = ""
+    for idx, item in enumerate(items_list):
+        name  = item.get("name", "")
+        qty   = safe_int(item.get("qty", 1))
+        price = safe_float(item.get("unit_price", 0))
+        amt   = qty * price
+        rows_html += f"""
+        <tr>
+            <td class="num">{idx + 1}</td>
+            <td>{name}</td>
+            <td>{qty}</td>
+            <td>{price:,.2f}</td>
+            <td style="text-align:right">{amt:,.2f}</td>
+        </tr>"""
+
+    if not rows_html:
+        rows_html = '<tr><td colspan="5" style="text-align:center;color:#C29BA4;padding:16px 0">ไม่พบรายการสินค้า</td></tr>'
+
+    subtotal_row = (f'<div class="t-row"><span>ยอดก่อน VAT :</span>'
+                    f'<span>{subtotal_val:,.2f} บาท</span></div>') if subtotal_val else ""
+    vat_row      = (f'<div class="t-row"><span>VAT 7% :</span>'
+                    f'<span>{vat_val:,.2f} บาท</span></div>') if vat_val else ""
+
+    return f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+* {{ box-sizing:border-box; margin:0; padding:0; }}
+body {{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:transparent; }}
+.card {{ background:white; border-radius:18px; border:1px solid #F4C6D5; overflow:hidden; }}
+.dc-header {{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:14px 18px; border-bottom:1px solid #F4E0E8;
+}}
+.dc-title {{ font-size:15px; font-weight:700; color:#4A2E35; }}
+.icon-btn {{
+    background:transparent; border:none; cursor:pointer;
+    font-size:17px; padding:3px 6px; border-radius:6px; color:#C97D98;
+}}
+.icon-btn:hover {{ background:#FFF0F5; }}
+.dc-body {{ padding:16px 18px; }}
+.badge {{
+    display:inline-block; background:#FFF0F5; color:#A35271;
+    border:1px solid #F4C6D5; border-radius:8px;
+    font-size:12px; padding:4px 12px; margin-bottom:16px;
+}}
+.info-row {{ display:flex; gap:8px; font-size:13px; margin-bottom:9px; align-items:baseline; }}
+.lbl {{ color:#C29BA4; min-width:120px; flex-shrink:0; }}
+.val {{ color:#4A2E35; font-weight:600; }}
+.divider {{ border:none; border-top:1px solid #F4E0E8; margin:14px 0; }}
+.sec-lbl {{ font-size:12px; color:#C29BA4; margin-bottom:8px; }}
+.tbl {{ width:100%; border-collapse:collapse; font-size:13px; }}
+.tbl th {{
+    color:#C29BA4; font-weight:400; padding:4px 6px 9px;
+    border-bottom:1px solid #F4E0E8; text-align:center;
+}}
+.tbl th:nth-child(2) {{ text-align:left; }}
+.tbl td {{ padding:8px 6px; color:#4A2E35; text-align:center; }}
+.tbl td:nth-child(2) {{ text-align:left; }}
+.num {{ color:#C29BA4; font-size:12px; }}
+.totals {{ padding-top:4px; }}
+.t-row {{
+    display:flex; justify-content:space-between;
+    font-size:13px; color:#A07A85; margin-bottom:7px;
+}}
+.grand {{ color:#4A2E35; font-weight:700; font-size:14px; margin-bottom:0; }}
+.dc-footer {{
+    display:flex; justify-content:flex-end; align-items:center;
+    gap:8px; padding:11px 18px 15px; border-top:1px solid #F4E0E8;
+}}
+.f-btn {{
+    background:white; border:1px solid #F4C6D5; color:#A35271;
+    border-radius:10px; width:36px; height:36px; font-size:15px;
+    cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
+}}
+.f-btn:hover {{ background:#FFF0F5; }}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="dc-header">
+    <span class="dc-title">รายละเอียดใบเสร็จ</span>
+    <div>
+      <button class="icon-btn" title="แก้ไข">✏️</button>
+      <button class="icon-btn" title="ลบ">🗑️</button>
+    </div>
+  </div>
+  <div class="dc-body">
+    <span class="badge">{receipt_type}</span>
+    <div class="info-row"><span class="lbl">ร้านค้า / ผู้ขาย :</span><span class="val">{merchant}</span></div>
+    <div class="info-row"><span class="lbl">เลขที่ใบเสร็จ :</span><span class="val">{receipt_no}</span></div>
+    <div class="info-row"><span class="lbl">วันที่ :</span><span class="val">{date_val}</span></div>
+    <hr class="divider">
+    <div class="sec-lbl">รายการสินค้า</div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:32px">ลำดับ</th>
+          <th>รายการ</th>
+          <th style="width:50px">จำนวน</th>
+          <th style="width:60px">ราคา</th>
+          <th style="width:60px;text-align:right">รวม</th>
+        </tr>
+      </thead>
+      <tbody>{rows_html}</tbody>
+    </table>
+    <hr class="divider">
+    <div class="totals">
+      {subtotal_row}
+      {vat_row}
+      <div class="t-row grand">
+        <span>ยอดรวม :</span>
+        <span>{total_val:,.2f} บาท</span>
+      </div>
+    </div>
+  </div>
+  <div class="dc-footer">
+    <button class="f-btn" title="คัดลอก">📋</button>
+    <button class="f-btn" title="แชร์">↑</button>
+  </div>
 </div>
-""", unsafe_allow_html=True)
+</body>
+</html>"""
+
 
 # =========================================================
-# PAGE 1 : UPLOAD INTERFACE (ถอดแบบตามรายงานรูปเล่มหน้า 41)
+# PAGE 1 : UPLOAD
 # =========================================================
-if "processed_img" not in st.session_state:
+if "processed_img" not in st.session_state or st.session_state.get("file_uploaded") is None:
 
-    st.markdown("<div class='hero-title'>Receipt scanning and data collection tools</div>", unsafe_allow_html=True)
-    st.markdown("<div class='hero-subtitle'>Upload receipt image or PDF document</div>", unsafe_allow_html=True)
+    st.markdown("<div class='hero-title'>Receipt scanning and data collection tools</div>",
+                unsafe_allow_html=True)
+    st.markdown("<div class='hero-subtitle'>Upload an image or PDF of your receipt to store it using OCR</div>",
+                unsafe_allow_html=True)
 
-    uploaded_file = st.file_uploader("Upload Receipt", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+    uploaded_file = st.file_uploader(
+        "",
+        type=["jpg", "jpeg", "png", "pdf"],
+        key="uploader_widget",
+        label_visibility="collapsed",
+    )
 
-    # =====================================================
-    # PREVIEW & PIPELINE TRIGGER
-    # =====================================================
     if uploaded_file is not None:
-        st.markdown(
-            "<div class='preview-title' style='text-align:center; color:#4A2E35; font-weight:bold; margin-top:30px; margin-bottom:15px;'>Uploaded Preview</div>",
-            unsafe_allow_html=True)
+        st.session_state["file_uploaded"] = uploaded_file
+        file_bytes = uploaded_file.read()
+        file_name  = uploaded_file.name
 
-        image = Image.open(uploaded_file)
+        with st.spinner("⏳ Processing image..."):
+            img = load_image_or_pdf(file_bytes, file_name)
+            if img is None:
+                st.error("❌ Unsupported file")
+                st.stop()
+            deskewed  = deskew_image(img)
+            processed = process_method_4_sharpening(deskewed)
+            st.session_state["processed_img"] = processed
 
-        # จัดพิกัดให้อยู่ตรงกลางสวยงามก่อนกดประมวลผล
-        col_p1, col_p2, col_p3 = st.columns([1, 2, 1])
-        with col_p2:
-            st.image(image, use_container_width=True)
+        with st.spinner("⚡ Running OCR..."):
+            raw_text = run_typhoon_ocr(st.session_state["processed_img"])
+            st.session_state["raw_text"] = raw_text
 
-            if st.button("🚀 Process Receipt", use_container_width=True):
-                with st.spinner("Processing receipt..."):
-                    img_array = np.array(image)
-                    if len(img_array.shape) == 3:
-                        img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+        if "[ERROR]" in raw_text or not raw_text.strip():
+            st.error("❌ OCR failed")
+            st.session_state.clear()
+        else:
+            with st.spinner("🤖 Structuring data..."):
+                extracted_json = call_typhoon_llm(raw_text)
+                st.session_state["extracted_json"] = extracted_json
+            st.rerun()
 
-                    st.session_state["processed_img"] = img_array
-                    st.session_state["raw_text"] = "7-Eleven\nMilk 25\nBread 35\nCoffee 45"
-                    st.session_state["extracted_json"] = fake_ocr_result()
-                st.rerun()
 
 # =========================================================
-# PAGE 2 : RESULT INTERFACE (ถอดแบบตามรายงานรูปเล่มหน้า 42)
+# PAGE 2 : RESULT
 # =========================================================
 else:
-    processed_img = st.session_state["processed_img"]
-    raw_text = st.session_state["raw_text"]
+    processed_img  = st.session_state["processed_img"]
+    raw_text       = st.session_state["raw_text"]
     extracted_json = st.session_state["extracted_json"]
 
-    # ปุ่มกดย้อนกลับทรงเหลี่ยมมนพาสเทล
-    st.button("← Back", key="back_btn", on_click=reset_app)
+    has_error = (
+        isinstance(extracted_json, dict)
+        and "error" in extracted_json
+        and extracted_json["error"]
+    )
 
     st.markdown('<div class="result-wrapper">', unsafe_allow_html=True)
-    left_col, right_col = st.columns([1, 1])
+    col_left, col_right = st.columns([1, 1])
 
-    # ── ฝั่งซ้าย: พรีวิวรูปใบเสร็จต้นฉบับอ้างอิง ──
-    with left_col:
-        st.markdown(
-            "<div class='section-title' style='color:#4A2E35; font-weight:bold; margin-bottom:15px;'>🖼️ Receipt Preview</div>",
-            unsafe_allow_html=True)
-        st.markdown('<div class="image-card">', unsafe_allow_html=True)
+    # ── LEFT: รูปใบเสร็จ ──────────────────────────────────
+    with col_left:
+        st.markdown('<div class="img-card-wrap">', unsafe_allow_html=True)
 
-        display_img = cv2.cvtColor(processed_img, cv2.COLOR_BGR2RGB)
+        if len(processed_img.shape) == 2:
+            display_img = cv2.cvtColor(processed_img, cv2.COLOR_GRAY2RGB)
+        else:
+            display_img = cv2.cvtColor(processed_img, cv2.COLOR_BGR2RGB)
+
         st.image(display_img, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
 
         with st.expander("📄 Raw OCR Text"):
-            st.code(raw_text)
+            st.code(raw_text, language="text")
 
-    # ── ฝั่งขวา: การ์ดฟอร์มรายละเอียดใบเสร็จสีชมพูพาสเทล (RecAipt Card) ──
-    with right_col:
-        st.markdown('<div class="receipt-card">', unsafe_allow_html=True)
-        st.markdown(
-            '<div class="receipt-title" style="text-align:center; color:#4A2E35; font-size:20px; font-weight:bold; margin-bottom:25px;">รายละเอียดใบเสร็จ</div>',
-            unsafe_allow_html=True)
-
-        with st.form("verified_receipt_form"):
-            merchant = st.text_input("🏪 ร้านค้า / ผู้ขาย", value=extracted_json.get("store_name", ""))
-            receipt_no = st.text_input("🧾 เลขที่ใบเสร็จ", value=extracted_json.get("receipt_no", ""))
-            date_val = st.text_input("📅 วันที่", value=extracted_json.get("date", ""))
-
-            st.markdown("<p style='font-weight:bold; margin-top:20px; color:#4A2E35;'>📦 รายการสินค้า</p>",
-                        unsafe_allow_html=True)
-            items = extracted_json.get("items", [])
-            edited_items = []
-
-            for idx, item in enumerate(items):
-                c1, c2, c3 = st.columns([5, 2, 3])
-                with c1:
-                    i_name = st.text_input(f"รายการ #{idx + 1}", value=item.get("name", ""), key=f"n_{idx}")
-                with c2:
-                    i_qty = st.number_input("จำนวน", value=int(item.get("qty", 1)), step=1, key=f"q_{idx}")
-                with c3:
-                    i_price = st.number_input("ราคา", value=float(item.get("unit_price", 0.0)), step=0.5,
-                                              key=f"p_{idx}")
-
-                edited_items.append({
-                    "name": i_name,
-                    "qty": i_qty,
-                    "unit_price": i_price,
-                    "amount": i_qty * i_price
-                })
-
-            st.markdown("---")
-            subtotal = st.number_input("ยอดรวมก่อนภาษี (Subtotal)", value=float(extracted_json.get("subtotal", 0.0)),
-                                       step=0.5)
-            vat = st.number_input("VAT 7% :", value=float(extracted_json.get("vat", 0.0)), step=0.1)
-            total = st.number_input("ยอดรวม :", value=float(extracted_json.get("total", 0.0)), step=0.5)
-
-            export_btn = st.form_submit_button("📤  ส่งออก")
-
-        if export_btn:
-            st.success("🎉 บันทึกและดึงข้อมูลเข้าสู่ฐานข้อมูลเสร็จสิ้นเรียบร้อยแล้ว!")
-            st.json({
-                "store_name": merchant,
-                "receipt_no": receipt_no,
-                "date": date_val,
-                "items": edited_items,
-                "subtotal": subtotal,
-                "vat": vat,
-                "total": total
-            })
-
+        st.markdown('<div class="back-wrap">', unsafe_allow_html=True)
+        st.button("←", key="back_btn", on_click=reset_app)
         st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown('</div>', unsafe_allow_html=True)  # img-card-wrap
+
+    # ── RIGHT: รายละเอียดใบเสร็จ ─────────────────────────
+    with col_right:
+        if has_error:
+            st.error(f"❌ {extracted_json['error']}")
+        else:
+            # คำนวณความสูง card
+            items_count = len(extracted_json.get("items", []) or [])
+            card_height = 500 + max(0, items_count - 3) * 38
+
+            # render HTML ผ่าน iframe เพื่อหลีกเลี่ยง Streamlit escaping
+            components.html(
+                build_detail_card_html(extracted_json),
+                height=card_height,
+                scrolling=False,
+            )
+
+            # ปุ่ม ส่งออก
+            st.markdown('<div class="export-wrap">', unsafe_allow_html=True)
+            if st.button("📤  ส่งออก", key="export_btn"):
+                items_list = extracted_json.get("items", []) or []
+                export_items = [
+                    {
+                        "name":       it.get("name", ""),
+                        "qty":        safe_int(it.get("qty", 1)),
+                        "unit_price": safe_float(it.get("unit_price", 0)),
+                        "amount":     safe_int(it.get("qty", 1)) * safe_float(it.get("unit_price", 0)),
+                    }
+                    for it in items_list
+                ]
+                st.success("🎉 บันทึกข้อมูลเรียบร้อยแล้ว")
+                st.json({
+                    "store_name": extracted_json.get("store_name", "—"),
+                    "receipt_no": extracted_json.get("receipt_no",  "—"),
+                    "date":       extracted_json.get("date",        "—"),
+                    "items":      export_items,
+                    "subtotal":   safe_float(extracted_json.get("subtotal", 0)),
+                    "vat":        safe_float(extracted_json.get("vat",      0)),
+                    "total":      safe_float(extracted_json.get("total",    0)),
+                })
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)  # result-wrapper
