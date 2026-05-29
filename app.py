@@ -1,10 +1,7 @@
 import cv2
 import streamlit as st
-import streamlit.components.v1 as components  # นำเข้าตัวเชื่อม Component สำหรับจัดการ iframe
+import streamlit.components.v1 as components
 
-# =========================================================
-# PAGE CONFIG
-# =========================================================
 st.set_page_config(
     page_title="RecAipt - Receipt scanning tools",
     layout="wide",
@@ -20,7 +17,7 @@ from ocr_engine import (
 )
 
 # =========================================================
-# GLOBAL CSS (คงเดิม 100% สไตล์และดีไซน์ไม่ขยับเลยแม้แต่พิกเซลเดียว)
+# GLOBAL CSS
 # =========================================================
 st.markdown("""
 <style>
@@ -111,8 +108,30 @@ header, footer, #MainMenu,
 iframe { display:block !important; margin:0 auto !important; border-radius:24px !important; }
 [data-testid="stElementToolbar"] {display:none !important;}
 button[title="View fullscreen"] {display:none !important;}
+
 </style>
 """, unsafe_allow_html=True)
+
+# =========================================================
+# HEADER  (ใช้ SVG แทน Google Fonts เพื่อไม่ต้องรอโหลด)
+# =========================================================
+st.markdown("""
+<div class="header-bar">
+  <div class="logo-text">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+         stroke="#C97D98" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+      <polyline points="10 9 9 9 8 9"/>
+    </svg>
+    RecAipt
+  </div>
+  <div class="lang-pill">English ▾</div>
+</div>
+""", unsafe_allow_html=True)
+
 
 # =========================================================
 # HELPERS
@@ -122,44 +141,22 @@ def reset_app():
         del st.session_state[key]
 
 def safe_float(value, default=0.0):
-    try: return float(str(value).replace(",", "").strip())
-    except Exception: return default
+    try:
+        return float(str(value).replace(",", "").strip())
+    except Exception:
+        return default
 
 def safe_int(value, default=1):
-    try: return int(float(str(value).replace(",", "").strip()))
-    except Exception: return default
+    try:
+        return int(float(str(value).replace(",", "").strip()))
+    except Exception:
+        return default
+
 
 # =========================================================
-# 🔥 JAVASCRIPT MESSAGE ENGINE (สปายสะพานไร้สาย เจาะ Sandbox คลาวด์)
+# HTML BUILDERS  (SVG icons ทั้งหมด — ไม่ต้องโหลด font)
 # =========================================================
-# ประกาศตัวดักฟังรับข้อความ (Message Passing WebAPI) คอยอัปเดตและสั่งงาน Python ทันทีเมื่อคลิกปุ่ม
-st.markdown("""
-<script>
-if (!window.hasRecAiptListener) {
-    window.hasRecAiptListener = true;
-    window.addEventListener('message', function(e) {
-        if (e.data && e.data.type === 'recalpt_action') {
-            // ยิงสัญญาณคำสั่งอัปเดตระบบหลังบ้านผ่าน HTML Input
-            const btn = window.parent.document.createElement('a');
-            const url = new URL(window.parent.location.href);
-            url.searchParams.set("triggered_event", e.data.value);
-            window.parent.location.href = url.toString();
-        }
-    });
-}
-</script>
-""", unsafe_allow_html=True)
 
-# สคริปต์กลางประจำตัวกล่องปุ่ม สำหรับส่งสััญญาณไร้สายทะลุครอสโอริจิน
-HTML_POST_BRIDGE = """<script>
-function executeAction(actValue) {
-    window.parent.postMessage({type: 'recalpt_action', value: actValue}, '*');
-}
-</script>"""
-
-# =========================================================
-# HTML BUILDERS & SVG ICONS
-# =========================================================
 SVG_BACK   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>'
 SVG_EDIT   = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
 SVG_DELETE = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>'
@@ -168,6 +165,7 @@ SVG_SHARE  = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke
 SVG_DL     = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
 SVG_ZOOM   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>'
 SVG_BOX    = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C97D98" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>'
+
 
 def build_detail_card_html(extracted_json):
     merchant     = extracted_json.get("store_name",   "—") or "—"
@@ -185,7 +183,14 @@ def build_detail_card_html(extracted_json):
         qty   = safe_int(item.get("qty", 1))
         price = safe_float(item.get("unit_price", 0))
         amt   = qty * price
-        rows_html += f"<tr><td class='num'>{idx+1}</td><td>{name}</td><td>{qty}</td><td>{price:,.2f}</td><td style='text-align:right'>{amt:,.2f}</td></tr>"
+        rows_html += f"""
+        <tr>
+          <td class="num">{idx+1}</td>
+          <td>{name}</td>
+          <td>{qty}</td>
+          <td>{price:,.2f}</td>
+          <td style="text-align:right">{amt:,.2f}</td>
+        </tr>"""
 
     if not rows_html:
         rows_html = '<tr><td colspan="5" style="text-align:center;color:#C29BA4;padding:16px 0">ไม่พบรายการสินค้า</td></tr>'
@@ -193,7 +198,6 @@ def build_detail_card_html(extracted_json):
     subtotal_row = f'<div class="t-row"><span>ยอดก่อน VAT :</span><span>{subtotal_val:,.2f} บาท</span></div>' if subtotal_val else ""
     vat_row      = f'<div class="t-row"><span>VAT 7% :</span><span>{vat_val:,.2f} บาท</span></div>' if vat_val else ""
 
-    # 📌 ฝังฟังก์ชัน onclick="executeAction(...)" ลงที่ปุ่มดั้งเดิมของคุณชิ้นเดียวตรงเป๊ะ
     return f"""<!DOCTYPE html><html><head><meta charset="utf-8">
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
@@ -222,16 +226,14 @@ svg{{display:inline-block;vertical-align:middle;flex-shrink:0}}
 .totals{{padding-top:14px}}
 .t-row{{display:flex;justify-content:space-between;font-size:13px;color:#A07A85;margin-bottom:8px}}
 .grand{{color:#4A2E35;font-weight:700;font-size:15px}}
-</style>
-{HTML_POST_BRIDGE}
-</head><body>
+</style></head><body>
 <div class="card">
   <div class="dc-header">
-    <button class="dc-back" onclick="executeAction('back')">{SVG_BACK}</button>
+    <button class="dc-back">{SVG_BACK}</button>
     <span class="dc-title">รายละเอียดใบเสร็จ</span>
     <div class="dc-icons">
-      <button class="icon-btn" title="แก้ไข" onclick="executeAction('edit')">{SVG_EDIT}</button>
-      <button class="icon-btn" title="ลบ" onclick="executeAction('delete')">{SVG_DELETE}</button>
+      <button class="icon-btn" title="แก้ไข">{SVG_EDIT}</button>
+      <button class="icon-btn" title="ลบ">{SVG_DELETE}</button>
     </div>
   </div>
   <div class="dc-body">
@@ -258,6 +260,7 @@ svg{{display:inline-block;vertical-align:middle;flex-shrink:0}}
 </div>
 </body></html>"""
 
+
 def build_action_bar_html():
     return f"""<!DOCTYPE html><html><head><meta charset="utf-8">
 <style>
@@ -270,15 +273,14 @@ svg{{display:inline-block;vertical-align:middle}}
 .btn:active{{transform:translateY(0)}}
 .btn.primary{{background:#C97D98;color:#fff;border:none}}
 .btn.primary:hover{{background:#A35271}}
-</style>
-{HTML_POST_BRIDGE}
-</head><body>
+</style></head><body>
 <div class="bar">
-  <button class="btn" onclick="executeAction('copy')">{SVG_COPY} คัดลอก</button>
-  <button class="btn" onclick="executeAction('share')">{SVG_SHARE} แชร์</button>
-  <button class="btn primary" onclick="executeAction('export')">{SVG_DL} ส่งออก</button>
+  <button class="btn">{SVG_COPY} คัดลอก</button>
+  <button class="btn">{SVG_SHARE} แชร์</button>
+  <button class="btn primary" onclick="window.parent.parent.location.search='?action=export'">{SVG_DL} ส่งออก</button>
 </div>
 </body></html>"""
+
 
 def build_img_controls_html():
     return f"""<!DOCTYPE html><html><head><meta charset="utf-8">
@@ -287,16 +289,16 @@ def build_img_controls_html():
 body{{background:transparent}}
 svg{{display:inline-block;vertical-align:middle}}
 .row{{display:flex;justify-content:space-between;align-items:center;padding:10px 2px 2px}}
-.round-btn{{width:42px;height:42px;border-radius:50%;background:#FFFFFF;border:1px solid #F4C6D5;cursor:pointer;box-shadow:0 2px 8px rgba(74,46,53,0.08);color:#4A2E35;transition:background .15s}}
+.round-btn{{width:42px;height:42px;border-radius:50%;background:#FFFFFF;border:1px solid #F4C6D5;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(74,46,53,0.08);color:#4A2E35;transition:background .15s}}
 .round-btn:hover{{background:#F8D7E3}}
-</style>
-{HTML_POST_BRIDGE}
-</head><body>
+</style></head><body>
 <div class="row">
-  <button class="round-btn" onclick="executeAction('back')">{SVG_BACK}</button>
-  <button class="round-btn" onclick="executeAction('maximize')">{SVG_ZOOM}</button>
+  <button class="round-btn" onclick="window.parent.parent.location.search='?action=back'">{SVG_BACK}</button>
+  <button class="round-btn">{SVG_ZOOM}</button>
 </div>
 </body></html>"""
+
+
 
 
 # =========================================================
@@ -304,8 +306,10 @@ svg{{display:inline-block;vertical-align:middle}}
 # =========================================================
 if "processed_img" not in st.session_state or st.session_state.get("file_uploaded") is None:
 
-    st.markdown("<div class='hero-title'>Receipt scanning and data collection tools</div>", unsafe_allow_html=True)
-    st.markdown("<div class='hero-subtitle'>Upload an image or PDF of your receipt to store it using OCR</div>", unsafe_allow_html=True)
+    st.markdown("<div class='hero-title'>Receipt scanning and data collection tools</div>",
+                unsafe_allow_html=True)
+    st.markdown("<div class='hero-subtitle'>Upload an image or PDF of your receipt to store it using OCR</div>",
+                unsafe_allow_html=True)
 
     uploaded_file = st.file_uploader(
         "", type=["jpg","jpeg","png","pdf"],
@@ -339,7 +343,7 @@ if "processed_img" not in st.session_state or st.session_state.get("file_uploade
 
 
 # =========================================================
-# PAGE 2 : RESULT (ตัวดักฟังอีเวนต์อัจฉริยะ ตอบสนองปุ่มดั้งเดิมทันที)
+# PAGE 2 : RESULT
 # =========================================================
 else:
     processed_img  = st.session_state["processed_img"]
@@ -352,33 +356,12 @@ else:
         and extracted_json["error"]
     )
 
-    # 🕵️‍♂️ ดักสัญญาณวิทยุคลื่นสั้นสกัดจาก Event Parameter (ข้าม Iframe Sandbox สำเร็จ 100%)
-    action = st.query_params.get("triggered_event", "")
+    action = st.query_params.get("action", "")
 
     if action == "back":
         st.query_params.clear()
         reset_app()
         st.rerun()
-
-    elif action == "edit":
-        st.query_params.clear()
-        st.toast("✏️ เปิดใช้งานระบบแก้ไขข้อมูลฟิลด์ใบเสร็จแล้ว")
-
-    elif action == "delete":
-        st.query_params.clear()
-        st.toast("🗑️ ดำเนินการลบแบบจำลองข้อมูลใบเสร็จใบนี้เรียบร้อยแล้ว")
-
-    elif action == "copy":
-        st.query_params.clear()
-        st.toast("📋 คัดลอกรายการราคาสินค้าดิจิทัลลง Clipboard สำเร็จ!")
-
-    elif action == "share":
-        st.query_params.clear()
-        st.toast("🔗 ระบบ: ดำเนินการสร้างลิงก์สำหรับส่งต่อและแชร์สำเร็จ")
-
-    elif action == "maximize":
-        st.query_params.clear()
-        st.toast("🔍 ขยายขนาดภาพพรีวิวใบเสร็จรับเงินเพื่อตรวจสอบพิกเซล")
 
     elif action == "export":
         st.query_params.clear()
@@ -408,7 +391,9 @@ else:
     st.markdown('<div class="result-wrapper">', unsafe_allow_html=True)
     col_left, col_right = st.columns([1, 1])
 
-    # ── LEFT (ฝั่งซ้าย - พรีวิวภาพดั้งเดิม 100%) ──
+    # ════════════════════════════════════════
+    # LEFT
+    # ════════════════════════════════════════
     with col_left:
         st.markdown('<div class="img-card-wrap">', unsafe_allow_html=True)
         display_img = (
@@ -419,9 +404,12 @@ else:
         st.image(display_img, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
+        # ── controls row (back + zoom) ──
         components.html(build_img_controls_html(), height=58, scrolling=False)
 
-    # ── RIGHT (ฝั่งขวา - บล็อกดีไซน์พาสเทลเดิมชิ้นเดียว 100%) ──
+    # ════════════════════════════════════════
+    # RIGHT
+    # ════════════════════════════════════════
     with col_right:
         if has_error:
             st.error(f"❌ {extracted_json['error']}")
@@ -429,7 +417,9 @@ else:
             items_count = len(extracted_json.get("items", []) or [])
             card_height = 430 + max(0, items_count - 2) * 38
 
-            components.html(build_detail_card_html(extracted_json), height=card_height, scrolling=False)
+            components.html(build_detail_card_html(extracted_json),
+                            height=card_height, scrolling=False)
+
             components.html(build_action_bar_html(), height=58, scrolling=False)
 
     st.markdown('</div>', unsafe_allow_html=True)
