@@ -3,4 +3,4 @@ opencv-python-headless
 numpy
 requests
 pymupdf
-supabase==2.4.0
+supabase>=2.15.0

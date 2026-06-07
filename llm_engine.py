@@ -82,6 +82,10 @@ def clean_and_format_ocr(text):
     for keyword in keywords:
         text = re.sub(keyword, r"\n\1", text, flags=re.IGNORECASE)
 
+    # Retail receipts often print several items in one OCR line. Split after money-like
+    # amounts when the next token looks like a new Thai/English item name.
+    text = re.sub(r"(?<=\d[.,]\d{2})\s+(?=[A-Za-zก-๙])", "\n", text)
+
     lines = text.split("\n")
     formatted = []
     for line in lines:
@@ -101,64 +105,155 @@ def call_typhoon_llm(ocr_text):
     corrected_ocr = rule_based_correct(ocr_text)
     final_ocr_input = clean_and_format_ocr(corrected_ocr)
 
-    system_prompt = (
-        "คุณคือผู้เชี่ยวชาญอ่านใบเสร็จรับเงินภาษาไทย/อังกฤษ "
-        "หน้าที่คือแก้ OCR และสกัดข้อมูลตามบริบทลงใน JSON โครงสร้างตามที่กำหนดให้เท่านั้น "
-        "ห้ามเดาข้อมูล ถ้าไม่มีข้อมูลในฟิลด์นั้นให้ใช้ค่า null และตอบกลับมาแค่ก้อน JSON เท่านั้น "
-        "ห้ามเขียนอธิบาย ห้ามใส่กล่องข้อความ ```json ห้ามตอบอย่างอื่นเด็ดขาด"
-    )
+    system_prompt = """
+คุณคือผู้เชี่ยวชาญด้านการอ่านใบเสร็จ ใบกำกับภาษี และเอกสารทางการเงินภาษาไทย
 
-    user_prompt = f"""ข้อความ OCR:
+หน้าที่ของคุณคือ
+
+1. วิเคราะห์ข้อความ OCR
+2. แก้ข้อความ OCR ที่ผิดตามบริบท
+3. แยกข้อมูลลง JSON ให้ตรงโครงสร้าง
+4. ห้ามเดาข้อมูล
+5. ถ้าไม่มีข้อมูลให้ใช้ null
+6. ตอบกลับเฉพาะ JSON เท่านั้น
+7. ห้ามมีคำอธิบาย
+8. ห้ามใส่ markdown
+9. ห้ามใส่ ```json
+"""
+
+    user_prompt = f"""
+ข้อความ OCR:
+
 ----------------
 {final_ocr_input}
 ----------------
 
-สกัดเป็นโครงสร้าง JSON ดังนี้:
+ให้สกัดข้อมูลออกมาเป็น JSON ตาม Schema นี้
+
 {{
-  "store_name": "ชื่อร้าน หรือ null",
-  "tax_id": "เลขผู้เสียภาษี หรือ null",
-  "receipt_no": "เลขใบเสร็จ หรือ null",
-  "date": "YYYY-MM-DD หรือ null",
+  "document_type": "ใบกำกับภาษีเต็มรูป|ใบกำกับภาษีอย่างย่อ|ใบเสร็จรับเงิน|อื่นๆ",
+
+  "seller": {{
+    "name": null,
+    "tax_id": null,
+    "address": null,
+    "telephone": null
+  }},
+
+  "buyer": {{
+    "name": null,
+    "tax_id": null,
+    "address": null
+  }},
+
+  "document_number": null,
+
+  "document_date": null,
+
+  "tax_included": true,
+
+  "amount_before_tax": null,
+
+  "vat_rate": null,
+
+  "vat_amount": null,
+
+  "grand_total": null,
+
+  "payment_method": null,
+
   "items": [
     {{
-      "name": "ชื่อสินค้า",
-      "qty": จำนวน,
-      "unit_price": ราคา,
-      "amount": ราคารวม
+      "item_description": null,
+      "quantity": null,
+      "unit_price": null,
+      "subtotal": null
     }}
-  ],
-  "subtotal": ยอดก่อนภาษี หรือ null,
-  "vat_rate": เปอร์เซ็นต์ VAT หรือ null,
-  "vat": จำนวน VAT หรือ null,
-  "total": ยอดรวมสุทธิ หรือ null,
-  "payment_method": "วิธีชำระ หรือ null"
-}}"""
+  ]
+}}
+
+กฎเพิ่มเติม
+
+- ถ้ามีข้อมูลผู้ซื้อให้ใส่ใน buyer
+- ถ้าไม่มีผู้ซื้อให้ buyer เป็น null
+- ถ้าพบคำว่า ABB ให้ document_type = ใบกำกับภาษีอย่างย่อ
+- ถ้ามีชื่อผู้ซื้อและเลขผู้เสียภาษีผู้ซื้อ ให้ document_type = ใบกำกับภาษีเต็มรูป
+- document_date ใช้รูปแบบ YYYY-MM-DD
+- amount_before_tax คือยอดก่อน VAT
+- vat_amount คือจำนวน VAT
+- grand_total คือยอดสุทธิ
+- quantity ต้องเป็นตัวเลข
+- unit_price ต้องเป็นตัวเลข
+- subtotal ต้องเป็นตัวเลข
+- items ต้องแยกเป็นรายแถวสินค้า/บริการเท่านั้น: 1 object ต่อ 1 รายการ ห้ามรวมสินค้าหลายรายการไว้ใน item_description เดียว
+- ถ้าใบเสร็จเป็นร้านค้าปลีก เช่น 7-Eleven หรือแสดง VAT รวมในราคา ให้ tax_included = true และห้ามบวก VAT เพิ่มซ้ำจากยอดสินค้า
+- ถ้าไม่เห็น VAT แยกชัดเจน แต่เห็นยอดสุทธิรวม ให้ประมาณ amount_before_tax = grand_total / 1.07 และ vat_amount = grand_total - amount_before_tax เฉพาะกรณีมีข้อความบ่งชี้ว่าเป็น VAT 7%
+
+ตอบกลับเฉพาะ JSON เท่านั้น
+"""
 
     payload = {
         "model": "typhoon-v2.5-30b-a3b-instruct",
         "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
+            {
+                "role": "system",
+                "content": system_prompt
+            },
+            {
+                "role": "user",
+                "content": user_prompt
+            }
         ],
-        "temperature": 0.1,
-        "max_tokens": 2048,
+        "temperature": 0,
+        "max_tokens": 3000,
     }
+
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
 
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=45)
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=60,
+        )
+
         response.raise_for_status()
+
         data = response.json()
+
         content = data["choices"][0]["message"]["content"].strip()
 
-        content = re.sub(r"\n```json", "", content, flags=re.IGNORECASE)
-        content = re.sub(r"```", "", content)
-        json_match = re.search(r"\{.*\}", content, re.DOTALL)
+        content = re.sub(
+            r"```json",
+            "",
+            content,
+            flags=re.IGNORECASE
+        )
+
+        content = re.sub(
+            r"```",
+            "",
+            content
+        )
+
+        json_match = re.search(
+            r"\{.*\}",
+            content,
+            re.DOTALL
+        )
+
         if json_match:
-            return json.loads(json_match.group(0).strip())
+            return json.loads(
+                json_match.group(0)
+            )
+
         return json.loads(content)
+
     except Exception as exc:
-        return {"error": f"ไม่สามารถถอดโครงสร้างพัสดุฟิลด์ได้: {str(exc)}"}
+        return {
+            "error": f"LLM Parse Error: {str(exc)}"
+        }
