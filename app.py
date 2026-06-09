@@ -22,15 +22,14 @@ try:
 except ImportError:
     create_client = None
 
-
 st.set_page_config(
     page_title="RecAipt - Receipt Verification",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-
-CSS = """
+# เก็บ CSS เอาไว้สำหรับนำไปรวมร่างเรนเดอร์ใน Topbar ทีเดียว
+CSS_STYLES = """
 <style>
 :root {
     --bg: #f3f1ec;
@@ -70,42 +69,40 @@ header, footer, #MainMenu,
     padding-top: 0 !important;
 }
 
-/* ลบ gap ที่ Streamlit ใส่มาเองระหว่าง element แรกกับ topbar */
-[data-testid="stVerticalBlock"] > [data-testid="stVerticalBlockBorderWrapper"]:first-child,
-[data-testid="stVerticalBlock"] > div:first-child {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
+/* ลบ Gap และ Margin ของ Streamlit Container ทุกระดับชั้น */
+[data-testid="stMainBlockContainer"] {
+    padding-top: 0px !important;
+    margin-top: 0px !important;
 }
 
-/* ลด gap ระหว่างทุก stMarkdownContainer ที่อยู่ใน vertical stack */
-[data-testid="stMarkdownContainer"] {
+div[data-testid="stVerticalBlockBorderWrapper"]:has(div[data-testid="stHorizontalBlock"]) {
+    margin-top: 0px !important;
+    padding-top: 0px !important;
+}
+
+div[data-testid="stVerticalBlock"]:has(> div [data-testid="element-container"] .app-topbar) + div {
+    margin-top: 0px !important;
+    padding-top: 0px !important;
+}
+
+[data-testid="stHorizontalBlock"] {
+    margin-top: 0px !important; 
+    padding-top: 0px !important;
+    gap: 16px !important; 
+}
+
+[data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+    padding-top: 0px !important;
+    margin-top: 0px !important;
+}
+
+[data-testid="stHorizontalBlock"] > [data-testid="stColumn"] > div {
+    padding-top: 0px !important;
+    margin-top: 0px !important;
+}
+
+[data-testid="stVerticalBlock"] > [data-testid="element-container"] {
     margin-bottom: 0 !important;
-}
-
-/* กดระยะห่างระหว่าง topbar html block กับ element ถัดไป */
-[data-testid="stMarkdownContainer"] > div.app-topbar {
-    margin-bottom: 0 !important;
-}
-
-/* element แรกใน block-container ต้องชนขอบบน */
-.block-container > div:first-child {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-}
-
-/* ให้ markdown container ที่ครอบ app-topbar full-width ไม่มี gap */
-div[data-testid="stMarkdownContainer"]:has(> div.app-topbar) {
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-/* ยกเลิก gap ที่ Streamlit ใส่ระหว่าง stMarkdown elements */
-div[data-testid="stVerticalBlock"] > div[data-testid="element-container"] {
-    margin-bottom: 0 !important;
-    gap: 0 !important;
-}
-
-div[data-testid="stVerticalBlock"] {
     gap: 0 !important;
 }
 
@@ -117,12 +114,84 @@ h1, h2, h3, h4, p, label, span, div {
     position: sticky;
     top: 0;
     z-index: 20;
-    width: calc(100vw) !important;
-    margin-left: calc(-50vw + 50%) !important;
-    padding: 10px 28px;
-    background: #f9f7f1;
+    margin: 0 -22px 12px -22px;
+    padding: 12px 28px;
+    background: var(--bg);
+    border-bottom: 1.5px solid var(--line);
+}
+
+.pane {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-top: 0px !important;
+}
+
+.pane-head {
+    padding: 14px 16px;
     border-bottom: 1px solid var(--line);
-    box-sizing: border-box;
+    background: var(--panel-2);
+    border-radius: 8px 8px 0 0;
+}
+
+.pane-title {
+    color: var(--ink);
+    font-size: 1.08rem;
+    font-weight: 740;
+    line-height: 1.35;
+}
+
+.pane-note {
+    color: var(--muted);
+    font-size: 0.94rem;
+    line-height: 1.5;
+    margin-top: 3px;
+}
+
+/* รวบกล่องสไลเดอร์ซูมกับแถวหัวข้อให้เกาะสนิทกันเป็นแผ่นเดียว */
+.zoom-control-row {
+    background: var(--panel);
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    padding: 4px 16px 0px 16px !important;
+    margin-top: 0px !important;
+}
+
+.zoom-control-row [data-testid="stSlider"] label,
+.zoom-control-row [data-testid="stSelectbox"] label {
+    display: none !important;
+}
+
+.zoom-control-row [data-testid="element-container"] {
+    margin-bottom: 0px !important;
+    padding-top: 0px !important;
+    margin-top: 0px !important;
+}
+
+.image-scroll {
+    height: calc(100vh - 210px) !important;
+    min-height: 750px !important;
+    overflow: auto;
+    padding: 14px;
+    background:
+        linear-gradient(45deg, #ece7dc 25%, transparent 25%),
+        linear-gradient(-45deg, #ece7dc 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ece7dc 75%),
+        linear-gradient(-45deg, transparent 75%, #ece7dc 75%);
+    background-size: 18px 18px;
+    background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+    border: 1px solid var(--line);
+    border-radius: 0 0 8px 8px;
+    margin-top: 0px !important;
+}
+
+.receipt-image {
+    display: block;
+    height: auto;
+    margin: 0 auto;
+    border: 1px solid #cfc8b8;
+    background: #fff;
+    box-shadow: 0 10px 28px rgba(40, 48, 42, 0.12);
 }
 
 .topbar-hist-link {
@@ -270,64 +339,6 @@ h1, h2, h3, h4, p, label, span, div {
     font-size: 0.96rem !important;
 }
 
-.split-shell {
-    display: grid;
-    grid-template-columns: minmax(360px, 0.95fr) minmax(420px, 1.05fr);
-    gap: 16px;
-    align-items: start;
-    margin-top: 0 !important;
-    padding-top: 4px;
-}
-
-.pane {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-}
-
-.pane-head {
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--line);
-    background: var(--panel-2);
-}
-
-.pane-title {
-    color: var(--ink);
-    font-size: 1.08rem;
-    font-weight: 740;
-    line-height: 1.35;
-}
-
-.pane-note {
-    color: var(--muted);
-    font-size: 0.94rem;
-    line-height: 1.5;
-    margin-top: 3px;
-}
-
-.image-scroll {
-    height: calc(100vh - 250px);
-    min-height: 520px;
-    overflow: auto;
-    padding: 14px;
-    background:
-        linear-gradient(45deg, #ece7dc 25%, transparent 25%),
-        linear-gradient(-45deg, #ece7dc 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #ece7dc 75%),
-        linear-gradient(-45deg, transparent 75%, #ece7dc 75%);
-    background-size: 18px 18px;
-    background-position: 0 0, 0 9px, 9px -9px, -9px 0;
-}
-
-.receipt-image {
-    display: block;
-    height: auto;
-    margin: 0 auto;
-    border: 1px solid #cfc8b8;
-    background: #fff;
-    box-shadow: 0 10px 28px rgba(40, 48, 42, 0.12);
-}
-
 .soft-callout {
     padding: 12px 14px;
     border-radius: 8px;
@@ -472,7 +483,6 @@ div.stFormSubmitButton > button[kind="primary"]:hover {
     color: #ffffff !important;
 }
 
-/* stPageLink ให้มีขนาดและสไตล์เหมือน stButton */
 div.stPageLink > a,
 div[data-testid="stPageLink"] > a {
     display: flex !important;
@@ -536,7 +546,6 @@ div[data-testid="stPageLink"] > a:hover {
     line-height: 1.55;
 }
 
-/* ── Feedback modal overlay ── */
 .fb-overlay {
     position: fixed;
     inset: 0;
@@ -676,32 +685,30 @@ div[data-testid="stPageLink"] > a:hover {
     color: #e8a820;
 }
 
-@media (max-width: 980px) {
-    .topbar-grid,
-    .split-shell,
-    .metric-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .status-row {
-        justify-content: flex-start;
-    }
-
-    .image-scroll {
-        height: 58vh;
-        min-height: 420px;
-    }
-}
-
-[data-testid="stMainBlockContainer"],
-[data-testid="stVerticalBlock"] {
-    gap: 0.75rem;
+[data-testid="stHeader"] {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
 }
 </style>
+<script>
+(function() {
+  function fix() {
+    var mc = document.querySelector('[data-testid="stMainBlockContainer"]');
+    var hd = document.querySelector('[data-testid="stHeader"]');
+    var hBlocks = document.querySelectorAll('[data-testid="stHorizontalBlock"]');
+    if (mc) { mc.style.setProperty('padding-top','0','important'); mc.style.setProperty('margin-top','0','important'); }
+    if (hd) { hd.style.setProperty('display','none','important'); hd.style.setProperty('height','0','important'); }
+    hBlocks.forEach(function(b) {
+      b.style.setProperty('margin-top','0px','important');
+      b.style.setProperty('padding-top','0','important');
+    });
+  }
+  fix();
+  new MutationObserver(fix).observe(document.documentElement, {subtree:true, attributes:true, attributeFilter:['style','class']});
+})();
+</script>
 """
-
-
-st.markdown(CSS, unsafe_allow_html=True)
 
 
 def stretch_kwargs():
@@ -711,7 +718,7 @@ def stretch_kwargs():
     return {"use_container_width": True}
 
 
-# ─── Feedback modal (pure HTML/JS injected once) ──────────────────────────────
+# ─── Feedback modal ─────────────────────────────────────────────────────────
 FEEDBACK_MODAL_HTML = """
 <div id="fb-overlay" class="fb-overlay" style="display:none;">
   <div class="fb-modal">
@@ -759,10 +766,8 @@ FEEDBACK_MODAL_HTML = """
     _starVal = 0;
     _selectedChips.clear();
 
-    // reset stars
     document.querySelectorAll(".fb-star").forEach(s => s.classList.remove("lit"));
 
-    // reset chips
     const chipRow = document.getElementById("fb-chips");
     chipRow.innerHTML = "";
     (CHIP_SETS[_trigger] || CHIP_SETS.new_receipt).forEach(label => {
@@ -781,10 +786,8 @@ FEEDBACK_MODAL_HTML = """
       chipRow.appendChild(chip);
     });
 
-    // reset textarea
     document.getElementById("fb-text").value = "";
 
-    // title/sub
     if (_trigger === "supabase") {
       document.getElementById("fb-modal-title").textContent = "บันทึกข้อมูลเรียบร้อยแล้ว 🎉";
       document.getElementById("fb-modal-sub").textContent = "ช่วยให้คะแนนและแนะนำได้เลยครับ";
@@ -808,23 +811,18 @@ FEEDBACK_MODAL_HTML = """
       comment: document.getElementById("fb-text").value.trim(),
       ts: new Date().toISOString()
     };
-    // Send to Streamlit via query param trick (window.location won't reload)
-    // Store in localStorage so Streamlit can pick it up if needed
     try {
       const prev = JSON.parse(localStorage.getItem("recaipt_feedback") || "[]");
       prev.push(payload);
       localStorage.setItem("recaipt_feedback", JSON.stringify(prev));
     } catch(e) {}
     closeFeedback();
-    // Show a brief toast
     showToast("ขอบคุณสำหรับความคิดเห็น! 🙏");
   };
 
-  // Star interaction
   document.addEventListener("DOMContentLoaded", function() {
     hookStars();
   });
-  // Also hook immediately in case DOM is ready
   hookStars();
 
   function hookStars() {
@@ -838,7 +836,6 @@ FEEDBACK_MODAL_HTML = """
     });
   }
 
-  // Toast helper
   window.showToast = function(msg) {
     const t = document.createElement("div");
     t.textContent = msg;
@@ -862,6 +859,7 @@ FEEDBACK_MODAL_HTML = """
 </style>
 """
 
+
 def safe_float(value, default=0.0):
     try:
         if value in (None, ""):
@@ -883,23 +881,19 @@ def safe_int(value, default=1):
 def normalize_date(value):
     if not value:
         return ""
-
     text = str(value).strip()
     numeric = re.match(r"^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$", text)
     iso = re.match(r"^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$", text)
-
     if iso:
         year, month, day = map(int, iso.groups())
         if year > 2500:
             year -= 543
         return f"{year:04d}-{month:02d}-{day:02d}"
-
     if numeric:
         day, month, year = map(int, numeric.groups())
         if year > 2500:
             year -= 543
         return f"{year:04d}-{month:02d}-{day:02d}"
-
     return text
 
 
@@ -917,12 +911,10 @@ def derive_vat_values(grand_total, vat_rate=7.0, tax_included=True):
     _rate = safe_float(vat_rate, 7.0)
     if _total <= 0 or _rate <= 0:
         return 0.0, 0.0
-
     if tax_included:
         before_tax = _total / (1 + (_rate / 100))
         vat_val = _total - before_tax
         return round(before_tax, 2), round(vat_val, 2)
-
     vat_val = _total * (_rate / 100)
     return round(_total, 2), round(vat_val, 2)
 
@@ -1054,25 +1046,10 @@ def build_export_payload(values, edited_items):
 def build_receipt_csv(payload):
     output = StringIO()
     fieldnames = [
-        "document_type",
-        "document_number",
-        "document_date",
-        "document_time",
-        "seller_name",
-        "seller_tax_id",
-        "seller_store_name",
-        "buyer_name",
-        "buyer_tax_id",
-        "amount_before_tax",
-        "vat_rate",
-        "vat_amount",
-        "grand_total",
-        "payment_method",
-        "item_no",
-        "item_description",
-        "quantity",
-        "unit_price",
-        "item_subtotal",
+        "document_type", "document_number", "document_date", "document_time",
+        "seller_name", "seller_tax_id", "seller_store_name", "buyer_name", "buyer_tax_id",
+        "amount_before_tax", "vat_rate", "vat_amount", "grand_total", "payment_method",
+        "item_no", "item_description", "quantity", "unit_price", "item_subtotal",
     ]
     writer = csv.DictWriter(output, fieldnames=fieldnames)
     writer.writeheader()
@@ -1109,7 +1086,6 @@ def build_receipt_csv(payload):
 
 
 def build_receipt_excel(payload, receipt_id=None):
-    """สร้าง Excel 2 ชีท: รายการสินค้า + บันทึก Supabase"""
     try:
         import openpyxl
         from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -1142,8 +1118,6 @@ def build_receipt_excel(payload, receipt_id=None):
         cell.border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
     wb = openpyxl.Workbook()
-
-    # ── Sheet 1: รายการสินค้า ─────────────────────────────────────────────────
     ws1 = wb.active
     ws1.title = "รายการสินค้า"
     ws1.sheet_view.showGridLines = False
@@ -1153,7 +1127,6 @@ def build_receipt_excel(payload, receipt_id=None):
     buyer = payload.get("buyer", {}) or {}
     totals = get_financial_totals(payload)
 
-    # Title row
     ws1.merge_cells("A1:J1")
     title_cell = ws1["A1"]
     title_cell.value = f"RecAipt — {seller.get('name', '-')}  |  เลขที่: {payload.get('document_number', '-')}  |  วันที่: {payload.get('document_date', '-')}"
@@ -1162,7 +1135,6 @@ def build_receipt_excel(payload, receipt_id=None):
     title_cell.alignment = Alignment(horizontal="left", vertical="center")
     ws1.row_dimensions[1].height = 36
 
-    # Sub-info rows
     info_rows = [
         ("ผู้ขาย", seller.get("name", "-"), "เลขผู้เสียภาษีผู้ขาย", seller.get("tax_id", "-")),
         ("ผู้ซื้อ", buyer.get("name", "-") or "-", "เลขผู้เสียภาษีผู้ซื้อ", buyer.get("tax_id", "-") or "-"),
@@ -1175,19 +1147,17 @@ def build_receipt_excel(payload, receipt_id=None):
         ws1.merge_cells(f"F{r_idx}:G{r_idx}")
         ws1.merge_cells(f"H{r_idx}:J{r_idx}")
         for col, val, bg, bold in [(1, l1, ACCENT_LIGHT, True), (3, v1, WHITE, False),
-                                    (6, l2, ACCENT_LIGHT, True), (8, v2, WHITE, False)]:
+                                   (6, l2, ACCENT_LIGHT, True), (8, v2, WHITE, False)]:
             c = ws1.cell(row=r_idx, column=col, value=val)
             data_style(c, bg=bg, bold=bold)
         ws1.row_dimensions[r_idx].height = 20
 
-    # Spacer
     ws1.row_dimensions[6].height = 8
 
-    # Item headers
     item_headers = ["#", "รายการสินค้า / บริการ", "จำนวน", "หน่วย", "ราคา/หน่วย",
                     "ยอดรวมรายการ", "สถานะ OCR", "", "", ""]
-    col_widths =   [5,   38,                        9,       8,      14,
-                    16,             14,              0,       0,      0]
+    col_widths = [5, 38, 9, 8, 14,
+                  16, 14, 0, 0, 0]
     ITEM_HEADER_ROW = 7
     for col_i, (hdr, w) in enumerate(zip(item_headers, col_widths), start=1):
         c = ws1.cell(row=ITEM_HEADER_ROW, column=col_i, value=hdr)
@@ -1201,12 +1171,8 @@ def build_receipt_excel(payload, receipt_id=None):
         row = ITEM_HEADER_ROW + i
         bg = WHITE if i % 2 == 1 else "F7F3EA"
         values = [
-            i,
-            item.get("item_description", "-"),
-            safe_float(item.get("quantity"), 1.0),
-            "หน่วย",
-            safe_float(item.get("unit_price")),
-            safe_float(item.get("subtotal")),
+            i, item.get("item_description", "-"), safe_float(item.get("quantity"), 1.0), "หน่วย",
+            safe_float(item.get("unit_price")), safe_float(item.get("subtotal")),
             item.get("สถานะ", "-") if "สถานะ" in item else "-",
         ]
         aligns = ["center", "left", "center", "center", "right", "right", "center"]
@@ -1219,7 +1185,6 @@ def build_receipt_excel(payload, receipt_id=None):
                 c.number_format = '#,##0.00'
         ws1.row_dimensions[row].height = 22
 
-    # Summary rows
     sum_row = ITEM_HEADER_ROW + len(items) + 2
     summary = [
         ("ยอดก่อนภาษี (Subtotal)", safe_float(totals.get("amount_before_tax")), ACCENT_LIGHT),
@@ -1236,11 +1201,9 @@ def build_receipt_excel(payload, receipt_id=None):
         vc.number_format = '#,##0.00'
         ws1.row_dimensions[r].height = 24
 
-    # ── Sheet 2: บันทึก Supabase ──────────────────────────────────────────────
     ws2 = wb.create_sheet("บันทึก Supabase")
     ws2.sheet_view.showGridLines = False
 
-    # Title
     ws2.merge_cells("A1:G1")
     t2 = ws2["A1"]
     t2.value = "RecAipt — บันทึกการส่งข้อมูลเข้า Supabase"
@@ -1249,8 +1212,7 @@ def build_receipt_excel(payload, receipt_id=None):
     t2.alignment = Alignment(horizontal="left", vertical="center")
     ws2.row_dimensions[1].height = 36
 
-    hdrs2 = ["receipt_id", "document_number", "document_date",
-             "seller_name", "grand_total", "status", "saved_at"]
+    hdrs2 = ["receipt_id", "document_number", "document_date", "seller_name", "grand_total", "status", "saved_at"]
     col_w2 = [14, 22, 16, 28, 16, 14, 22]
     for col_i, (h, w) in enumerate(zip(hdrs2, col_w2), start=1):
         c = ws2.cell(row=2, column=col_i, value=h)
@@ -1260,12 +1222,8 @@ def build_receipt_excel(payload, receipt_id=None):
 
     if receipt_id:
         row_data = [
-            receipt_id,
-            payload.get("document_number", "-"),
-            payload.get("document_date", "-"),
-            seller.get("name", "-"),
-            safe_float(totals.get("grand_total")),
-            "verified",
+            receipt_id, payload.get("document_number", "-"), payload.get("document_date", "-"),
+            seller.get("name", "-"), safe_float(totals.get("grand_total")), "verified",
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         ]
         aligns2 = ["center", "left", "center", "left", "right", "center", "center"]
@@ -1284,7 +1242,6 @@ def build_receipt_excel(payload, receipt_id=None):
         msg.alignment = Alignment(horizontal="center", vertical="center")
         ws2.row_dimensions[3].height = 28
 
-    # Note row
     note_row = 5
     ws2.merge_cells(f"A{note_row}:G{note_row}")
     note = ws2[f"A{note_row}"]
@@ -1321,16 +1278,13 @@ def image_to_data_uri(image_np, rotation=0):
         image = cv2.rotate(image, cv2.ROTATE_180)
     elif rotation == 270:
         image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
-
     if len(image.shape) == 2:
         ok, encoded = cv2.imencode(".png", image)
     else:
         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         ok, encoded = cv2.imencode(".png", rgb)
-
     if not ok:
         return ""
-
     return "data:image/png;base64," + base64.b64encode(encoded.tobytes()).decode("ascii")
 
 
@@ -1349,34 +1303,6 @@ def copy_button(label, text, key):
             await navigator.clipboard.writeText({payload});
             btn.innerText = "คัดลอกแล้ว";
             setTimeout(() => btn.innerText = {json.dumps(label, ensure_ascii=False)}, 1200);
-        }});
-        </script>
-        """,
-        height=54,
-    )
-
-
-def feedback_trigger_button(label, trigger, key, btn_type="secondary"):
-    """Render a button that opens the feedback modal via JS."""
-    primary_style = (
-        "background:#2f6f73;color:#fff;border-color:#2f6f73;"
-        if btn_type == "primary"
-        else "background:#fffdf8;color:#24302f;"
-    )
-    components.html(
-        f"""
-        <button id="fb-btn-{key}" style="
-            width:100%;min-height:44px;border-radius:8px;border:1px solid #b9af9c;
-            {primary_style}font-size:16px;font-weight:720;cursor:pointer;">
-            {label}
-        </button>
-        <script>
-        document.getElementById("fb-btn-{key}").addEventListener("click", function() {{
-            if (window.parent && window.parent.openFeedback) {{
-                window.parent.openFeedback("{trigger}");
-            }} else if (window.openFeedback) {{
-                window.openFeedback("{trigger}");
-            }}
         }});
         </script>
         """,
@@ -1407,7 +1333,6 @@ def upsert_company(supabase, company):
     company = company or {}
     if not company.get("name") and not company.get("tax_id") and not company.get("store_name"):
         return None
-
     company_payload = {
         "name": company.get("name") or company.get("store_name") or "-",
         "tax_id": company.get("tax_id") or None,
@@ -1459,13 +1384,11 @@ def save_to_supabase(payload):
                 "subtotal": safe_float(item.get("subtotal")),
             }
         ).execute()
-
     return receipt_id
 
 
 def update_receipt(receipt_id, payload):
     supabase = init_supabase()
-
     if supabase is None:
         raise RuntimeError("ยังไม่ได้ตั้งค่า SUPABASE_URL และ SUPABASE_KEY")
 
@@ -1491,11 +1414,7 @@ def update_receipt(receipt_id, payload):
         update_payload["seller_id"] = seller_id
     update_payload["buyer_id"] = buyer_id
 
-    supabase.table("receipts") \
-        .update(update_payload) \
-        .eq("id", receipt_id) \
-        .execute()  # type: ignore[union-attr]
-
+    supabase.table("receipts").update(update_payload).eq("id", receipt_id).execute()
     supabase.table("receipt_items").delete().eq("receipt_id", receipt_id).execute()
     for item in payload.get("items", []) or []:
         if not item.get("item_description") and not item.get("subtotal"):
@@ -1545,9 +1464,10 @@ def run_pipeline(uploaded_file):
     st.session_state["formatted_ocr_text"] = clean_and_format_ocr(raw_text)
     st.session_state["result_json"] = normalize_result(extracted)
     st.session_state["file_name"] = file_name
-    st.session_state["receipt_id"] = None   # ← reset receipt_id ทุกครั้งที่สแกนใหม่
+    st.session_state["receipt_id"] = None
 
 
+# ฟังก์ชันจัดการเรนเดอร์แถบเมนูด้านบนสุุด ควบรวมการฉีดโค้ดสไตล์ทั้งหมดเข้าด้วยกัน
 def render_topbar(result=None):
     import html as _html
 
@@ -1570,6 +1490,8 @@ def render_topbar(result=None):
     else:
         status_html = '<span class="badge badge-ok">OCR + LLM Pipeline พร้อมใช้งาน</span>'
 
+    # ปล่อยคำสั่ง CSS มัดรวมออกมาพร้อมกลุ่มโครงสร้าง HTML แถบเมนูดังกล่าวทันที
+    st.markdown(CSS_STYLES, unsafe_allow_html=True)
     st.markdown(
         f"""
         <div class="app-topbar">
@@ -1589,16 +1511,6 @@ def render_topbar(result=None):
         """,
         unsafe_allow_html=True,
     )
-
-
-def render_nav_actions():
-    nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 4])
-    with nav_col1:
-        if st.button("อัปโหลดใบใหม่", **stretch_kwargs()):
-            reset_app()
-            st.rerun()
-    with nav_col2:
-        st.page_link("pages/history.py", label="ประวัติใบเสร็จ", icon="📚", **stretch_kwargs())
 
 
 if "result_json" not in st.session_state:
@@ -1639,10 +1551,9 @@ if "result_json" not in st.session_state:
     )
     st.stop()
 
-
+# ─── กรณีประมวลผลหน้าต่างตรวจสอบข้อมูล ───
 result_json = st.session_state["result_json"]
 render_topbar(result_json)
-components.html(FEEDBACK_MODAL_HTML, height=0)
 
 left, right = st.columns([0.95, 1.05], gap="medium")
 
@@ -1658,11 +1569,14 @@ with left:
         """,
         unsafe_allow_html=True,
     )
+
+    st.markdown('<div class="zoom-control-row">', unsafe_allow_html=True)
     zoom_col, rotate_col = st.columns([1, 1])
     with zoom_col:
         zoom = st.slider("ซูมภาพ", min_value=80, max_value=190, value=110, step=10)
     with rotate_col:
         rotation = st.selectbox("หมุนภาพ", [0, 90, 180, 270], format_func=lambda x: f"{x} องศา")
+    st.markdown('</div>', unsafe_allow_html=True)
 
     data_uri = image_to_data_uri(st.session_state["processed_img"], rotation)
     st.markdown(
@@ -1747,7 +1661,8 @@ with right:
         with seller_col:
             seller_name = st.text_input("ชื่อร้านค้า / ผู้ขาย", value=get_nested(result_json, ["seller", "name"]))
             seller_tax_id = st.text_input("เลขผู้เสียภาษีผู้ขาย", value=get_nested(result_json, ["seller", "tax_id"]))
-            seller_store_name = st.text_input("ชื่อสาขา / ชื่อร้านบนใบเสร็จ", value=get_nested(result_json, ["seller", "store_name"]))
+            seller_store_name = st.text_input("ชื่อสาขา / ชื่อร้านบนใบเสร็จ",
+                                              value=get_nested(result_json, ["seller", "store_name"]))
         with buyer_col:
             buyer_name = st.text_input("ชื่อผู้ซื้อ", value=get_nested(result_json, ["buyer", "name"]))
             buyer_tax_id = st.text_input("เลขผู้เสียภาษีผู้ซื้อ", value=get_nested(result_json, ["buyer", "tax_id"]))
@@ -1889,23 +1804,6 @@ with right:
             "grand-total",
         )
 
-    # handle pending reset
-    if st.session_state.get("_pending_reset"):
-        del st.session_state["_pending_reset"]
-        components.html(
-            """
-            <script>
-            setTimeout(function() {
-                if (window.openFeedback) window.openFeedback("new_receipt");
-                else if (window.parent && window.parent.openFeedback) window.parent.openFeedback("new_receipt");
-            }, 200);
-            </script>
-            """,
-            height=0,
-        )
-        reset_app()
-        st.rerun()
-
     st.markdown('<div class="section-band">บันทึกและดำเนินการต่อ</div>', unsafe_allow_html=True)
     act_col1, act_col2, act_col3 = st.columns([1, 1, 1])
     with act_col1:
@@ -1915,32 +1813,10 @@ with right:
                 if st.session_state.get("receipt_id"):
                     update_receipt(st.session_state["receipt_id"], export_payload)
                     st.success("บันทึกการแก้ไขเรียบร้อยแล้ว")
-                    components.html(
-                        """
-                        <script>
-                        setTimeout(function() {
-                            if (window.openFeedback) window.openFeedback("supabase");
-                            else if (window.parent && window.parent.openFeedback) window.parent.openFeedback("supabase");
-                        }, 400);
-                        </script>
-                        """,
-                        height=0,
-                    )
                 else:
                     receipt_id = save_to_supabase(export_payload)
                     st.session_state["receipt_id"] = receipt_id
                     st.success(f"บันทึกลงระบบแล้ว (#{receipt_id})")
-                    components.html(
-                        """
-                        <script>
-                        setTimeout(function() {
-                            if (window.openFeedback) window.openFeedback("supabase");
-                            else if (window.parent && window.parent.openFeedback) window.parent.openFeedback("supabase");
-                        }, 400);
-                        </script>
-                        """,
-                        height=0,
-                    )
             except Exception as exc:
                 st.error(f"บันทึกไม่สำเร็จ: {exc}")
     with act_col2:
@@ -1950,3 +1826,6 @@ with right:
     with act_col3:
         if st.button("📚 ดูประวัติใบเสร็จ", **stretch_kwargs()):
             st.switch_page("pages/history.py")
+
+# โหลด Feedback Modal ไว้บรรลัดท้ายสุด เพื่อไม่ให้สร้าง element บล็อกดันหน้าจอขึ้นลง
+components.html(FEEDBACK_MODAL_HTML, height=0)
