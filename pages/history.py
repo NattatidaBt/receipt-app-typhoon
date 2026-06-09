@@ -3,6 +3,7 @@ pages/history.py  — RecAipt Receipt History
 ใช้ REST API ตรงแทน supabase-py เพื่อ compatibility กับ Python 3.14
 """
 import json
+import math
 import requests as _req
 
 import streamlit as st
@@ -92,9 +93,30 @@ div.stButton > button[kind="primary"]:hover { background: var(--accent-2) !impor
     color: var(--muted); font-size: 1.02rem; line-height: 1.7;
 }
 [data-testid="stDataFrame"] { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.stTextInput input, .stSelectbox div[data-baseweb="select"] > div {
+.stTextInput input,
+.stDateInput input,
+.stSelectbox div[data-baseweb="select"] > div {
     min-height: 40px !important; font-size: 0.98rem !important;
-    background: #fffefb !important; border-color: #cfc8b8 !important; border-radius: 8px !important;
+    background: #fffefb !important;
+    color: var(--ink) !important;
+    border-color: #cfc8b8 !important;
+    border-radius: 8px !important;
+}
+.stTextInput input::placeholder,
+.stDateInput input::placeholder {
+    color: var(--muted) !important;
+    opacity: 1 !important;
+}
+[data-testid="stDataFrame"] {
+    background: #fffdf8 !important;
+    color: var(--ink) !important;
+}
+[data-testid="stDataFrame"] * {
+    color: var(--ink) !important;
+}
+[data-testid="stAlert"] *,
+[data-testid="stException"] * {
+    color: var(--ink) !important;
 }
 @media (max-width: 900px) {
     .hist-hdr { grid-template-columns: 0.6fr 2.2fr 1.2fr 1.1fr 1.0fr 0.8fr 0.7fr; }
@@ -153,7 +175,8 @@ def safe_float(value, default=0.0):
     try:
         if value in (None, ""):
             return default
-        return float(str(value).replace(",", "").strip())
+        parsed = float(str(value).replace(",", "").strip())
+        return parsed if math.isfinite(parsed) else default
     except (TypeError, ValueError):
         return default
 

@@ -2,6 +2,7 @@
 import csv
 import inspect
 import json
+import math
 import re
 from io import StringIO
 
@@ -417,6 +418,27 @@ h1, h2, h3, h4, p, label, span, div {
     border-color: var(--accent) !important;
     color: var(--accent-2) !important;
 }
+
+/* ชื่อไฟล์ที่เลือกแล้วบน Streamlit Cloud */
+[data-testid="stFileUploaderFile"] *,
+[data-testid="stFileUploaderFileName"],
+[data-testid="stFileUploaderFileSize"] {
+    color: var(--ink) !important;
+    opacity: 1 !important;
+}
+
+[data-testid="stFileUploaderFile"] {
+    background: transparent !important;
+}
+
+[data-testid="stFileUploaderDeleteBtn"] button,
+[data-testid="stFileUploaderDeleteBtn"],
+[data-testid="stFileUploaderFile"] button {
+    background: #fffdf8 !important;
+    color: var(--ink) !important;
+    border: 1px solid #b9af9c !important;
+    border-radius: 8px !important;
+}
 /* ─────────────────────────────────────────────────── */
 
 .soft-callout {
@@ -498,6 +520,7 @@ h1, h2, h3, h4, p, label, span, div {
 .stTextInput input,
 .stTextArea textarea,
 .stNumberInput input,
+.stDateInput input,
 .stSelectbox div[data-baseweb="select"] > div {
     min-height: 44px !important;
     font-size: 1.02rem !important;
@@ -591,10 +614,55 @@ div[data-testid="stPageLink"] > a:hover {
     text-decoration: none !important;
 }
 
+.stNumberInput button,
+.stNumberInput [data-testid="stNumberInputStepDown"],
+.stNumberInput [data-testid="stNumberInputStepUp"] {
+    background: #fffdf8 !important;
+    color: var(--ink) !important;
+    border: 1px solid #b9af9c !important;
+}
+
+.stNumberInput button:hover,
+.stNumberInput [data-testid="stNumberInputStepDown"]:hover,
+.stNumberInput [data-testid="stNumberInputStepUp"]:hover {
+    background: #eef4f4 !important;
+    color: var(--accent-2) !important;
+    border-color: var(--accent) !important;
+}
+
+.stDateInput input,
+.stDateInput input::placeholder,
+.stTextInput input::placeholder {
+    color: var(--ink) !important;
+    opacity: 1 !important;
+}
+
 [data-testid="stDataFrame"] {
     border: 1px solid var(--line);
     border-radius: 8px;
     overflow: hidden;
+    background: #fffdf8 !important;
+    color: var(--ink) !important;
+}
+
+[data-testid="stDataFrame"] * {
+    color: var(--ink) !important;
+}
+
+[data-testid="stDataFrame"] div,
+[data-testid="stDataFrame"] span {
+    background-color: transparent;
+}
+
+[data-testid="stDataFrame"] button {
+    background: #fffdf8 !important;
+    color: var(--ink) !important;
+    border-color: #b9af9c !important;
+}
+
+[data-testid="stAlert"] *,
+[data-testid="stException"] * {
+    color: var(--ink) !important;
 }
 
 .action-pad {
@@ -958,7 +1026,8 @@ def safe_float(value, default=0.0):
     try:
         if value in (None, ""):
             return default
-        return float(str(value).replace(",", "").strip())
+        parsed = float(str(value).replace(",", "").strip())
+        return parsed if math.isfinite(parsed) else default
     except (TypeError, ValueError):
         return default
 
