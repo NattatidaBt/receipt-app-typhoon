@@ -1333,7 +1333,7 @@ def upsert_company(supabase, company):
 def save_to_supabase(payload):
     supabase = init_supabase()
     if supabase is None:
-        raise RuntimeError("ยังไม่ได้ตั้งค่า SUPABASE_URL และ SUPABASE_KEY")
+        raise RuntimeError("ไม่ได้ตั้งค่า SUPABASE_URL และ SUPABASE_KEY ใน Secrets")
 
     seller = payload.get("seller", {}) or {}
     buyer = payload.get("buyer", {}) or {}
@@ -1342,7 +1342,6 @@ def save_to_supabase(payload):
     seller_id = upsert_company(supabase, seller)
     buyer_id = upsert_company(supabase, buyer)
 
-    # ปรับแต่งแก้ไขเพื่อรองรับคอลัมน์ Non-Nullable (⬥) ของฐานข้อมูลจริง ป้องกัน Error PGRST125
     receipt_payload = {
         "receipt_type": payload.get("document_type") or "ใบเสร็จรับเงิน",
         "document_number": payload.get("document_number") or "-",
@@ -1351,26 +1350,26 @@ def save_to_supabase(payload):
         "seller_id": seller_id,
         "buyer_id": buyer_id,
         "tax_included": bool(st.session_state.get("tax_included", True)),
-        "amount_before_tax": safe_float(totals.get("amount_before_tax")),  # ⬥ Non-Nullable ห้ามส่งค่าว่างเปล่า
+        "amount_before_tax": safe_float(totals.get("amount_before_tax"), 0.0),  # บังคับ float
         "vat_rate": safe_float(totals.get("vat_rate"), 7.0),
-        "vat_amount": safe_float(totals.get("vat_amount")),
-        "grand_total": safe_float(totals.get("grand_total")),  # ⬥ Non-Nullable ห้ามส่งค่าว่างเปล่า
+        "vat_amount": safe_float(totals.get("vat_amount"), 0.0),
+        "grand_total": safe_float(totals.get("grand_total"), 0.0),  # บังคับ float
         "payment_method": get_payment_type(payload) or None,
+        "status": "verified"
     }
-    receipt_res = supabase.table("receipts").insert(receipt_payload).execute()
-    receipt_id = receipt_res.data[0]["id"]
+
+    res = supabase.table("receipts").insert(receipt_payload).execute()
+    receipt_id = res.data[0]["id"]
 
     for item in payload.get("items", []) or []:
-        # ปรับแก้ประเภทข้อมูล quantity จาก safe_int() เป็น safe_float() ให้ตรงกับคอลัมน์ numeric ของ Supabase จริง
-        supabase.table("receipt_items").insert(
-            {
-                "receipt_id": receipt_id,
-                "item_description": item.get("item_description") or "-",
-                "quantity": safe_float(item.get("quantity"), 1.0),  # แก้จาก int เป็น float ตามรูปโครงสร้าง ER
-                "unit_price": safe_float(item.get("unit_price")),
-                "subtotal": safe_float(item.get("subtotal")),
-            }
-        ).execute()
+        if not item.get("item_description"): continue
+        supabase.table("receipt_items").insert({
+            "receipt_id": receipt_id,
+            "item_description": item.get("item_description") or "-",
+            "quantity": safe_float(item.get("quantity"), 1.0),  # ใช้ safe_float ให้ตรงกับ numeric
+            "unit_price": safe_float(item.get("unit_price"), 0.0),
+            "subtotal": safe_float(item.get("subtotal"), 0.0),
+        }).execute()
     return receipt_id
 
 
