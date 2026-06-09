@@ -1,4 +1,5 @@
 ﻿import requests as _requests
+import streamlit as st
 
 def test_direct():
     url = st.secrets.get("SUPABASE_URL")
