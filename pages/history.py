@@ -506,3 +506,20 @@ else:
                 st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown('<div style="height:2px;"></div>', unsafe_allow_html=True)
+
+
+        def fetch_receipts(search_text="", date_from=None, date_to=None, status_filter="ทั้งหมด"):
+            supabase = init_supabase()
+            if supabase is None:
+                return []
+            try:
+                res = supabase.table("receipts").select("id, document_number").limit(3).execute()
+                st.write("DEBUG res:", res)  # ← ดู response จริง
+                rows = res.data or []
+            except Exception as e:
+                st.error(f"DEBUG exception type: {type(e).__name__}")
+                st.error(f"DEBUG exception: {e}")
+                import traceback
+                st.code(traceback.format_exc())
+                return []
+            return rows
