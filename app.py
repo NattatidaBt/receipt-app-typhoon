@@ -331,6 +331,7 @@ h1, h2, h3, h4, p, label, span, div {
     margin-bottom: 24px;
 }
 
+/* ─── FILE UPLOADER: จัดกึ่งกลาง X,Y และปุ่มสีขาว ─── */
 [data-testid="stFileUploader"] {
     max-width: 820px;
     margin: 0 auto;
@@ -342,11 +343,30 @@ h1, h2, h3, h4, p, label, span, div {
     border-radius: 8px !important;
     min-height: 190px !important;
     padding: 30px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+[data-testid="stFileUploaderDropzone"] > div {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    gap: 24px !important;
 }
 
 [data-testid="stFileUploaderDropzone"]:hover {
     border-color: var(--accent) !important;
     background: #fffffb !important;
+}
+
+[data-testid="stFileUploaderDropzoneInstructions"] {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
 }
 
 [data-testid="stFileUploaderDropzoneInstructions"] span {
@@ -359,6 +379,34 @@ h1, h2, h3, h4, p, label, span, div {
     color: var(--muted) !important;
     font-size: 0.96rem !important;
 }
+
+/* Override ปุ่ม Browse files สีดำบน Streamlit Cloud */
+[data-testid="stFileUploaderDropzone"] button,
+[data-testid="stFileUploader"] button,
+[data-testid="stFileUploader"] section button {
+    background-color: #fffdf8 !important;
+    background: #fffdf8 !important;
+    color: #24302f !important;
+    border: 1px solid #b9af9c !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    min-height: 40px !important;
+    padding: 6px 18px !important;
+    font-size: 0.98rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+}
+
+[data-testid="stFileUploaderDropzone"] button:hover,
+[data-testid="stFileUploader"] button:hover,
+[data-testid="stFileUploader"] section button:hover {
+    background-color: #eef4f4 !important;
+    background: #eef4f4 !important;
+    border-color: var(--accent) !important;
+    color: var(--accent-2) !important;
+}
+/* ─────────────────────────────────────────────────── */
 
 .soft-callout {
     padding: 12px 14px;
@@ -1448,11 +1496,6 @@ def _rest_delete(path, params):
 # ─── Supabase business logic (ใช้ REST แทน supabase-py) ─────────────────────
 
 def upsert_company(company):
-    """
-    Upsert บริษัท/ร้านค้า แล้วคืน id
-    ถ้ามี tax_id → upsert on_conflict=tax_id
-    ถ้าไม่มี → insert ใหม่เสมอ
-    """
     company = company or {}
     if not company.get("name") and not company.get("tax_id") and not company.get("store_name"):
         return None
@@ -1548,7 +1591,6 @@ def update_receipt(receipt_id, payload):
 
     _rest_patch("receipts", {"id": f"eq.{receipt_id}"}, update_payload)
 
-    # ลบ items เดิมแล้ว insert ใหม่
     _rest_delete("receipt_items", {"receipt_id": f"eq.{receipt_id}"})
     for item in payload.get("items", []) or []:
         if not item.get("item_description") and not item.get("subtotal"):
@@ -1904,7 +1946,7 @@ if save_local:
     st.success("บันทึกค่าที่ตรวจสอบไว้บนหน้านี้แล้ว")
     st.rerun()
 
-# ─── ชุดปุ่มดำเนินการและปุ่มดาวน์โหลด จัดอยู่ฝั่งขวา (with right) ดีไซน์กระชับสวยงาม ───
+# ─── ชุดปุ่มดำเนินการและปุ่มดาวน์โหลด ───
 with right:
     st.markdown('<div class="section-band">ส่งออกข้อมูล</div>', unsafe_allow_html=True)
     output_name = (export_payload.get("document_number") or "receipt").replace("/", "-")
