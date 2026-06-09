@@ -8,6 +8,7 @@ from io import StringIO
 import cv2
 import streamlit as st
 import streamlit.components.v1 as components
+import requests as _req
 
 from llm_engine import call_typhoon_llm, clean_and_format_ocr
 from ocr_engine import (
@@ -16,11 +17,6 @@ from ocr_engine import (
     process_method_4_sharpening,
     run_typhoon_ocr,
 )
-
-try:
-    from supabase import create_client
-except ImportError:
-    create_client = None
 
 st.set_page_config(
     page_title="RecAipt - Receipt Verification",
@@ -1300,47 +1296,145 @@ def reset_app():
         del st.session_state[key]
 
 
-@st.cache_resource(show_spinner=False)
-def init_supabase():
-    if create_client is None:
-        return None
+# ─── Supabase REST API helpers ───────────────────────────────────────────────
+
+def _get_creds():
+    """ดึง SUPABASE_URL และ SUPABASE_KEY จาก st.secrets"""
     try:
-        url = st.secrets.get("SUPABASE_URL")
-        key = st.secrets.get("SUPABASE_KEY")
+        url = st.secrets.get("SUPABASE_URL", "").rstrip("/")
+        key = st.secrets.get("SUPABASE_KEY", "")
+        return url, key
     except Exception:
-        return None
+        return "", ""
+
+
+def _headers(key):
+    return {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+        "Prefer": "return=representation",
+    }
+
+
+def _rest_get(path, params=None):
+    url, key = _get_creds()
     if not url or not key:
-        return None
-    return create_client(url, key)
+        return None, "ยังไม่ได้ตั้งค่า SUPABASE_URL / SUPABASE_KEY"
+    try:
+        r = _req.get(f"{url}/rest/v1/{path}", headers=_headers(key), params=params, timeout=10)
+        if r.status_code == 200:
+            return r.json(), None
+        return None, f"HTTP {r.status_code}: {r.text[:200]}"
+    except Exception as e:
+        return None, str(e)
 
 
-def upsert_company(supabase, company):
+def _rest_post(path, data):
+    """POST (insert) — คืน dict ของแถวแรกที่สร้าง"""
+    url, key = _get_creds()
+    if not url or not key:
+        raise RuntimeError("ยังไม่ได้ตั้งค่า SUPABASE_URL / SUPABASE_KEY ใน Secrets")
+    r = _req.post(
+        f"{url}/rest/v1/{path}",
+        headers=_headers(key),
+        json=data,
+        timeout=10,
+    )
+    if r.status_code not in (200, 201):
+        raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
+    rows = r.json()
+    return rows[0] if isinstance(rows, list) and rows else {}
+
+
+def _rest_upsert(path, data, on_conflict):
+    """UPSERT — ใช้ Prefer: resolution=merge-duplicates"""
+    url, key = _get_creds()
+    if not url or not key:
+        raise RuntimeError("ยังไม่ได้ตั้งค่า SUPABASE_URL / SUPABASE_KEY ใน Secrets")
+    hdrs = _headers(key)
+    hdrs["Prefer"] = f"return=representation,resolution=merge-duplicates"
+    r = _req.post(
+        f"{url}/rest/v1/{path}?on_conflict={on_conflict}",
+        headers=hdrs,
+        json=data,
+        timeout=10,
+    )
+    if r.status_code not in (200, 201):
+        raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
+    rows = r.json()
+    return rows[0] if isinstance(rows, list) and rows else {}
+
+
+def _rest_patch(path, params, data):
+    """PATCH (update) ตาม filter params"""
+    url, key = _get_creds()
+    if not url or not key:
+        raise RuntimeError("ยังไม่ได้ตั้งค่า SUPABASE_URL / SUPABASE_KEY ใน Secrets")
+    r = _req.patch(
+        f"{url}/rest/v1/{path}",
+        headers=_headers(key),
+        params=params,
+        json=data,
+        timeout=10,
+    )
+    if r.status_code not in (200, 204):
+        raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
+
+
+def _rest_delete(path, params):
+    """DELETE ตาม filter params"""
+    url, key = _get_creds()
+    if not url or not key:
+        raise RuntimeError("ยังไม่ได้ตั้งค่า SUPABASE_URL / SUPABASE_KEY ใน Secrets")
+    r = _req.delete(
+        f"{url}/rest/v1/{path}",
+        headers=_headers(key),
+        params=params,
+        timeout=10,
+    )
+    if r.status_code not in (200, 204):
+        raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
+
+
+# ─── Supabase business logic (ใช้ REST แทน supabase-py) ─────────────────────
+
+def upsert_company(company):
+    """
+    Upsert บริษัท/ร้านค้า แล้วคืน id
+    ถ้ามี tax_id → upsert on_conflict=tax_id
+    ถ้าไม่มี → insert ใหม่เสมอ
+    """
     company = company or {}
     if not company.get("name") and not company.get("tax_id") and not company.get("store_name"):
         return None
+
     company_payload = {
         "name": company.get("name") or company.get("store_name") or "-",
         "tax_id": company.get("tax_id") or None,
         "store_name": company.get("store_name") or None,
     }
+
     if company_payload["tax_id"]:
-        result = supabase.table("companies").upsert(company_payload, on_conflict="tax_id").execute()
+        row = _rest_upsert("companies", company_payload, on_conflict="tax_id")
     else:
-        result = supabase.table("companies").insert(company_payload).execute()
-    return result.data[0]["id"]
+        row = _rest_post("companies", company_payload)
+
+    return row.get("id")
 
 
 def save_to_supabase(payload):
-    supabase = init_supabase()
-    if supabase is None:
+    """Insert ใบเสร็จใหม่พร้อม items แล้วคืน receipt_id"""
+    url, key = _get_creds()
+    if not url or not key:
         raise RuntimeError("ไม่ได้ตั้งค่า SUPABASE_URL และ SUPABASE_KEY ใน Secrets")
 
     seller = payload.get("seller", {}) or {}
     buyer = payload.get("buyer", {}) or {}
     totals = get_financial_totals(payload)
 
-    seller_id = upsert_company(supabase, seller)
-    buyer_id = upsert_company(supabase, buyer)
+    seller_id = upsert_company(seller)
+    buyer_id = upsert_company(buyer)
 
     receipt_payload = {
         "receipt_type": payload.get("document_type") or "ใบเสร็จรับเงิน",
@@ -1350,39 +1444,43 @@ def save_to_supabase(payload):
         "seller_id": seller_id,
         "buyer_id": buyer_id,
         "tax_included": bool(st.session_state.get("tax_included", True)),
-        "amount_before_tax": safe_float(totals.get("amount_before_tax"), 0.0),  # บังคับ float
+        "amount_before_tax": safe_float(totals.get("amount_before_tax"), 0.0),
         "vat_rate": safe_float(totals.get("vat_rate"), 7.0),
         "vat_amount": safe_float(totals.get("vat_amount"), 0.0),
-        "grand_total": safe_float(totals.get("grand_total"), 0.0),  # บังคับ float
+        "grand_total": safe_float(totals.get("grand_total"), 0.0),
         "payment_method": get_payment_type(payload) or None,
-        "status": "verified"
+        "status": "verified",
     }
 
-    res = supabase.table("receipts").insert(receipt_payload).execute()
-    receipt_id = res.data[0]["id"]
+    row = _rest_post("receipts", receipt_payload)
+    receipt_id = row.get("id")
 
     for item in payload.get("items", []) or []:
-        if not item.get("item_description"): continue
-        supabase.table("receipt_items").insert({
+        if not item.get("item_description"):
+            continue
+        _rest_post("receipt_items", {
             "receipt_id": receipt_id,
             "item_description": item.get("item_description") or "-",
-            "quantity": safe_float(item.get("quantity"), 1.0),  # ใช้ safe_float ให้ตรงกับ numeric
+            "quantity": safe_float(item.get("quantity"), 1.0),
             "unit_price": safe_float(item.get("unit_price"), 0.0),
             "subtotal": safe_float(item.get("subtotal"), 0.0),
-        }).execute()
+        })
+
     return receipt_id
 
 
 def update_receipt(receipt_id, payload):
-    supabase = init_supabase()
-    if supabase is None:
+    """Patch ใบเสร็จที่มีอยู่ แล้วแทน items ทั้งหมด"""
+    url, key = _get_creds()
+    if not url or not key:
         raise RuntimeError("ยังไม่ได้ตั้งค่า SUPABASE_URL และ SUPABASE_KEY")
 
     totals = get_financial_totals(payload)
     seller = payload.get("seller", {}) or {}
     buyer = payload.get("buyer", {}) or {}
-    seller_id = upsert_company(supabase, seller)
-    buyer_id = upsert_company(supabase, buyer)
+
+    seller_id = upsert_company(seller)
+    buyer_id = upsert_company(buyer)
 
     update_payload = {
         "receipt_type": payload.get("document_type"),
@@ -1395,25 +1493,25 @@ def update_receipt(receipt_id, payload):
         "vat_amount": safe_float(totals.get("vat_amount")),
         "grand_total": safe_float(totals.get("grand_total")),
         "payment_method": get_payment_type(payload) or None,
+        "buyer_id": buyer_id,
     }
     if seller_id is not None:
         update_payload["seller_id"] = seller_id
-    update_payload["buyer_id"] = buyer_id
 
-    supabase.table("receipts").update(update_payload).eq("id", receipt_id).execute()
-    supabase.table("receipt_items").delete().eq("receipt_id", receipt_id).execute()
+    _rest_patch("receipts", {"id": f"eq.{receipt_id}"}, update_payload)
+
+    # ลบ items เดิมแล้ว insert ใหม่
+    _rest_delete("receipt_items", {"receipt_id": f"eq.{receipt_id}"})
     for item in payload.get("items", []) or []:
         if not item.get("item_description") and not item.get("subtotal"):
             continue
-        supabase.table("receipt_items").insert(
-            {
-                "receipt_id": receipt_id,
-                "item_description": item.get("item_description") or "-",
-                "quantity": safe_float(item.get("quantity"), 1.0),  # แก้จาก int เป็น float ตามรูปโครงสร้าง ER
-                "unit_price": safe_float(item.get("unit_price")),
-                "subtotal": safe_float(item.get("subtotal")),
-            }
-        ).execute()
+        _rest_post("receipt_items", {
+            "receipt_id": receipt_id,
+            "item_description": item.get("item_description") or "-",
+            "quantity": safe_float(item.get("quantity"), 1.0),
+            "unit_price": safe_float(item.get("unit_price")),
+            "subtotal": safe_float(item.get("subtotal")),
+        })
 
 
 def run_pipeline(uploaded_file):
