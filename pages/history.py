@@ -182,7 +182,10 @@ def fetch_receipts(search_text="", date_from=None, date_to=None, status_filter="
     try:
         query = (
             supabase.table("receipts")
-            .select("id, receipt_type, document_number, document_date, grand_total, status, created_at, original_filename, seller:companies!receipts_seller_id_fkey(name, tax_id)")
+            .select(
+                "id, receipt_type, document_number, document_date, "
+                "grand_total, status, created_at, original_filename, seller_id"
+            )
             .order("created_at", desc=True)
             .limit(200)
         )
@@ -194,32 +197,32 @@ def fetch_receipts(search_text="", date_from=None, date_to=None, status_filter="
             query = query.eq("status", status_filter)
         res = query.execute()
         rows = res.data or []
-    except Exception:
-        # fallback: ดึงโดยไม่ join companies ถ้า foreign key hint ไม่ work
-        try:
-            query2 = (
-                supabase.table("receipts")
-                .select("id, receipt_type, document_number, document_date, grand_total, status, created_at, original_filename")
-                .order("created_at", desc=True)
-                .limit(200)
+
+        # ── ดึงชื่อร้านแยก ไม่ใช้ join เพื่อ compatibility ทุกเวอร์ชัน ──
+        seller_ids = list({r["seller_id"] for r in rows if r.get("seller_id")})
+        seller_map = {}
+        if seller_ids:
+            s_res = (
+                supabase.table("companies")
+                .select("id, name")
+                .in_("id", seller_ids)
+                .execute()
             )
-            if date_from:
-                query2 = query2.gte("document_date", str(date_from))
-            if date_to:
-                query2 = query2.lte("document_date", str(date_to))
-            if status_filter != "ทั้งหมด":
-                query2 = query2.eq("status", status_filter)
-            res2 = query2.execute()
-            rows = res2.data or []
-        except Exception as e2:
-            st.error(f"ไม่สามารถดึงข้อมูลได้: {e2}")
-            return []
+            seller_map = {s["id"]: s["name"] for s in (s_res.data or [])}
+
+        for r in rows:
+            r["seller_name"] = seller_map.get(r.get("seller_id"), "-")
+
+    except Exception as e:
+        st.error(f"ไม่สามารถดึงข้อมูลได้: {e}")
+        return []
+
     if search_text:
         q = search_text.lower()
         rows = [
             r for r in rows
             if q in str(r.get("document_number", "")).lower()
-            or q in str((r.get("seller") or r.get("companies") or {}).get("name", "")).lower()
+            or q in str(r.get("seller_name", "")).lower()
             or q in str(r.get("document_date", "")).lower()
         ]
     return rows
@@ -229,26 +232,54 @@ def fetch_receipt_detail(receipt_id):
     supabase = init_supabase()
     if supabase is None:
         return None, []
+
+    # ── ดึง receipt หลัก ──
     try:
         r_res = (
             supabase.table("receipts")
-            .select("*, seller:companies!receipts_seller_id_fkey(name, tax_id, address, telephone), buyer:companies!receipts_buyer_id_fkey(name, tax_id, address)")
+            .select("*")
             .eq("id", receipt_id)
             .single()
             .execute()
         )
-    except Exception:
+        receipt = r_res.data
+    except Exception as e:
+        st.error(f"ดึงรายละเอียดไม่ได้: {e}")
+        return None, []
+
+    # ── ดึง seller แยก ──
+    if receipt.get("seller_id"):
         try:
-            r_res = (
-                supabase.table("receipts")
-                .select("*")
-                .eq("id", receipt_id)
+            s_res = (
+                supabase.table("companies")
+                .select("name, tax_id, address, telephone, store_name")
+                .eq("id", receipt["seller_id"])
                 .single()
                 .execute()
             )
+            receipt["seller"] = s_res.data or {}
         except Exception:
-            return None, []
-    receipt = r_res.data
+            receipt["seller"] = {}
+    else:
+        receipt["seller"] = {}
+
+    # ── ดึง buyer แยก ──
+    if receipt.get("buyer_id"):
+        try:
+            b_res = (
+                supabase.table("companies")
+                .select("name, tax_id, address")
+                .eq("id", receipt["buyer_id"])
+                .single()
+                .execute()
+            )
+            receipt["buyer"] = b_res.data or {}
+        except Exception:
+            receipt["buyer"] = {}
+    else:
+        receipt["buyer"] = {}
+
+    # ── ดึง items ──
     try:
         i_res = (
             supabase.table("receipt_items")
@@ -260,6 +291,7 @@ def fetch_receipt_detail(receipt_id):
         items = i_res.data or []
     except Exception:
         items = []
+
     return receipt, items
 
 
@@ -351,7 +383,8 @@ else:
     for row in rows:
         rid = row.get("id")
         doc_num = row.get("document_number") or "-"
-        seller_name = (row.get("companies") or {}).get("name", "-")
+        # ✅ แก้: ใช้ seller_name ที่ดึงแยกมาแล้ว
+        seller_name = row.get("seller_name", "-")
         doc_date = row.get("document_date") or "-"
         grand_total = safe_float(row.get("grand_total"))
         status = row.get("status") or "draft"
@@ -408,7 +441,8 @@ else:
                 receipt, items = fetch_receipt_detail(rid)
 
             if receipt:
-                seller = receipt.get("companies") or {}
+                # ✅ แก้: ใช้ key "seller" และ "buyer" ที่ inject ไว้แล้วใน fetch_receipt_detail
+                seller = receipt.get("seller") or {}
                 buyer = receipt.get("buyer") or {}
 
                 st.markdown('<div class="detail-pane">', unsafe_allow_html=True)
