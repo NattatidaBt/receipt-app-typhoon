@@ -24,6 +24,54 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# ─── ประเภทเอกสารที่รองรับ ───────────────────────────────────────────────────
+DOC_TYPES = ["ใบเสร็จทั่วไป", "ใบกำกับภาษีอย่างย่อ", "ใบกำกับภาษีแบบเต็มรูป"]
+DOC_TYPE_DEFAULT = DOC_TYPES[0]
+
+# คำ/วลีที่ LLM อาจส่งกลับมา → map ไปยัง 3 ตัวเลือกมาตรฐาน
+_DOC_TYPE_MAP = {
+    # ใบเสร็จทั่วไป
+    "ใบเสร็จรับเงิน": "ใบเสร็จทั่วไป",
+    "ใบเสร็จ": "ใบเสร็จทั่วไป",
+    "receipt": "ใบเสร็จทั่วไป",
+    "ใบเสร็จทั่วไป": "ใบเสร็จทั่วไป",
+    # ใบกำกับภาษีอย่างย่อ
+    "ใบกำกับภาษีอย่างย่อ": "ใบกำกับภาษีอย่างย่อ",
+    "ใบกำกับย่อ": "ใบกำกับภาษีอย่างย่อ",
+    "tax invoice (abbreviated)": "ใบกำกับภาษีอย่างย่อ",
+    "abbreviated tax invoice": "ใบกำกับภาษีอย่างย่อ",
+    # ใบกำกับภาษีแบบเต็มรูป
+    "ใบกำกับภาษี": "ใบกำกับภาษีแบบเต็มรูป",
+    "ใบกำกับภาษีแบบเต็มรูป": "ใบกำกับภาษีแบบเต็มรูป",
+    "ใบกำกับภาษีเต็มรูปแบบ": "ใบกำกับภาษีแบบเต็มรูป",
+    "tax invoice": "ใบกำกับภาษีแบบเต็มรูป",
+    "full tax invoice": "ใบกำกับภาษีแบบเต็มรูป",
+}
+
+
+def normalize_doc_type(value):
+    """แปลงค่าจาก OCR/LLM ให้ตรงกับ DOC_TYPES หนึ่งใน 3 ตัว"""
+    if not value:
+        return DOC_TYPE_DEFAULT
+    v = str(value).strip()
+    # ตรงตัว
+    if v in DOC_TYPES:
+        return v
+    # map แบบ case-insensitive
+    mapped = _DOC_TYPE_MAP.get(v) or _DOC_TYPE_MAP.get(v.lower())
+    if mapped:
+        return mapped
+    # เดาจาก keyword
+    vl = v.lower()
+    if "เต็ม" in vl or "full" in vl:
+        return "ใบกำกับภาษีแบบเต็มรูป"
+    if "ย่อ" in vl or "abbr" in vl:
+        return "ใบกำกับภาษีอย่างย่อ"
+    if "กำกับ" in vl or "invoice" in vl:
+        return "ใบกำกับภาษีแบบเต็มรูป"
+    return DOC_TYPE_DEFAULT
+
+
 # สตริงรวมสไตล์ CSS ทั้งหมดของหน้าจอ
 CSS_STYLES = """
 <style>
@@ -947,7 +995,7 @@ def normalize_result(data):
         amount_before_tax, vat_amount = derive_vat_values(grand_total, vat_rate, tax_included=True)
 
     return {
-        "document_type": data.get("document_type") or None,
+        "document_type": normalize_doc_type(data.get("document_type")),
         "document_number": data.get("document_number", data.get("receipt_no")) or None,
         "document_date": normalize_date(data.get("document_date", data.get("date"))) or None,
         "document_time": data.get("document_time") or None,
@@ -998,7 +1046,7 @@ def build_export_payload(values, edited_items):
         items = [{"item_description": None, "quantity": None, "unit_price": None, "subtotal": None}]
 
     return {
-        "document_type": values["document_type"] or None,
+        "document_type": normalize_doc_type(values["document_type"]) or DOC_TYPE_DEFAULT,
         "document_number": values["document_number"] or None,
         "document_date": normalize_date(values["document_date"]) or None,
         "document_time": values["document_time"] or None,
@@ -1734,7 +1782,12 @@ with right:
         st.markdown('<div class="section-band">หัวเอกสาร</div>', unsafe_allow_html=True)
         doc_col1, doc_col2 = st.columns([1, 1])
         with doc_col1:
-            document_type = st.text_input("ประเภทเอกสาร", value=result_json.get("document_type", ""))
+            _current_doc_type = normalize_doc_type(result_json.get("document_type"))
+            document_type = st.selectbox(
+                "ประเภทเอกสาร",
+                options=DOC_TYPES,
+                index=DOC_TYPES.index(_current_doc_type),
+            )
             document_number = st.text_input("เลขที่เอกสาร", value=result_json.get("document_number", ""))
         with doc_col2:
             document_date = st.text_input("วันที่เอกสาร (YYYY-MM-DD)", value=result_json.get("document_date", ""))
