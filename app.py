@@ -168,7 +168,7 @@ h1, h2, h3, h4, p, label, span, div {
     margin-top: 0px !important;
 }
 
-/* ปรับปรุงกล่องสกรอลล์ภาพฝั่งซ้ายให้ยืดหยุ่น ยืดตัวยาวอิงตามคอลัมน์ขวาเพื่อปิดรอยแหว่งครีม */
+/* ล็อกความสูงกล่องแสดงภาพฝั่งซ้ายให้เกาะยืดตัวยาวอิงตามคอลัมน์ฟอร์มขวาเพื่อปิดรอยแหว่งครีม */
 .image-scroll {
     height: calc(100vh - 210px) !important;
     min-height: 820px !important;
@@ -193,26 +193,6 @@ h1, h2, h3, h4, p, label, span, div {
     border: 1px solid #cfc8b8;
     background: #fff;
     box-shadow: 0 10px 28px rgba(40, 48, 42, 0.12);
-}
-
-.topbar-hist-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    border-radius: 8px;
-    border: none;
-    background: var(--accent);
-    color: #ffffff !important;
-    font-size: 0.88rem;
-    font-weight: 650;
-    cursor: pointer;
-    transition: background 0.15s;
-    margin-left: auto;
-}
-
-.topbar-hist-btn:hover {
-    background: var(--accent-2);
 }
 
 .topbar-grid {
@@ -682,6 +662,23 @@ div[data-testid="stPageLink"] > a:hover {
     color: #e8a820;
 }
 
+@media (max-width: 980px) {
+    .topbar-grid,
+    .split-shell,
+    .metric-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .status-row {
+        justify-content: flex-start;
+    }
+
+    .image-scroll {
+        height: 58vh;
+        min-height: 420px;
+    }
+}
+
 [data-testid="stHeader"] {
     display: none !important;
     height: 0 !important;
@@ -862,15 +859,6 @@ def safe_float(value, default=0.0):
         if value in (None, ""):
             return default
         return float(str(value).replace(",", "").strip())
-    except (TypeError, ValueError):
-        return default
-
-
-def safe_int(value, default=1):
-    try:
-        if value in (None, ""):
-            return default
-        return int(float(str(value).replace(",", "").strip()))
     except (TypeError, ValueError):
         return default
 
@@ -1354,6 +1342,7 @@ def save_to_supabase(payload):
     seller_id = upsert_company(supabase, seller)
     buyer_id = upsert_company(supabase, buyer)
 
+    # ปรับแต่งแก้ไขเพื่อรองรับคอลัมน์ Non-Nullable (⬥) ของฐานข้อมูลจริง ป้องกัน Error PGRST125
     receipt_payload = {
         "receipt_type": payload.get("document_type") or "ใบเสร็จรับเงิน",
         "document_number": payload.get("document_number") or "-",
@@ -1362,21 +1351,22 @@ def save_to_supabase(payload):
         "seller_id": seller_id,
         "buyer_id": buyer_id,
         "tax_included": bool(st.session_state.get("tax_included", True)),
-        "amount_before_tax": safe_float(totals.get("amount_before_tax")),
+        "amount_before_tax": safe_float(totals.get("amount_before_tax")),  # ⬥ Non-Nullable ห้ามส่งค่าว่างเปล่า
         "vat_rate": safe_float(totals.get("vat_rate"), 7.0),
         "vat_amount": safe_float(totals.get("vat_amount")),
-        "grand_total": safe_float(totals.get("grand_total")),
+        "grand_total": safe_float(totals.get("grand_total")),  # ⬥ Non-Nullable ห้ามส่งค่าว่างเปล่า
         "payment_method": get_payment_type(payload) or None,
     }
     receipt_res = supabase.table("receipts").insert(receipt_payload).execute()
     receipt_id = receipt_res.data[0]["id"]
 
     for item in payload.get("items", []) or []:
+        # ปรับแก้ประเภทข้อมูล quantity จาก safe_int() เป็น safe_float() ให้ตรงกับคอลัมน์ numeric ของ Supabase จริง
         supabase.table("receipt_items").insert(
             {
                 "receipt_id": receipt_id,
                 "item_description": item.get("item_description") or "-",
-                "quantity": safe_int(item.get("quantity"), 1),
+                "quantity": safe_float(item.get("quantity"), 1.0),  # แก้จาก int เป็น float ตามรูปโครงสร้าง ER
                 "unit_price": safe_float(item.get("unit_price")),
                 "subtotal": safe_float(item.get("subtotal")),
             }
@@ -1420,7 +1410,7 @@ def update_receipt(receipt_id, payload):
             {
                 "receipt_id": receipt_id,
                 "item_description": item.get("item_description") or "-",
-                "quantity": safe_int(item.get("quantity"), 1),
+                "quantity": safe_float(item.get("quantity"), 1.0),  # แก้จาก int เป็น float ตามรูปโครงสร้าง ER
                 "unit_price": safe_float(item.get("unit_price")),
                 "subtotal": safe_float(item.get("subtotal")),
             }
@@ -1549,7 +1539,7 @@ if "result_json" not in st.session_state:
     )
     st.stop()
 
-# ─── กรณีประมวลผลหน้าต่างตรวจสอบข้อมูลผลลัพธ์ ───
+# ─── บล็อกกรณีประมวลผลหน้าต่างตรวจสอบข้อมูล ───
 result_json = st.session_state["result_json"]
 render_topbar(result_json)
 
@@ -1764,7 +1754,7 @@ if save_local:
     st.success("บันทึกค่าที่ตรวจสอบไว้บนหน้านี้แล้ว")
     st.rerun()
 
-# ─── ย้ายชุดปุ่มส่งออกและบันทึกทั้งหมดกลับเข้ามาอยู่ในฝั่งขวา (with right) ───
+# ─── ชุดปุ่มดำเนินการและปุ่มดาวน์โหลด จัดอยู่ฝั่งขวา (with right) ดีไซน์กระชับสวยงาม ───
 with right:
     st.markdown('<div class="section-band">ส่งออกข้อมูล</div>', unsafe_allow_html=True)
     output_name = (export_payload.get("document_number") or "receipt").replace("/", "-")
