@@ -3,6 +3,6 @@ opencv-python-headless
 numpy
 requests
 pymupdf
-supabase>=2.15.0
 websockets>=13.0
 openpyxl>=3.1.2
+supabase==2.30.1
