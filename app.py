@@ -28,7 +28,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# เก็บ CSS เอาไว้สำหรับนำไปรวมร่างเรนเดอร์ใน Topbar ทีเดียว
+# สตริงรวมสไตล์ CSS ทั้งหมดของหน้าจอ
 CSS_STYLES = """
 <style>
 :root {
@@ -168,9 +168,10 @@ h1, h2, h3, h4, p, label, span, div {
     margin-top: 0px !important;
 }
 
+/* ปรับปรุงกล่องสกรอลล์ภาพฝั่งซ้ายให้ยืดหยุ่น ยืดตัวยาวอิงตามคอลัมน์ขวาเพื่อปิดรอยแหว่งครีม */
 .image-scroll {
     height: calc(100vh - 210px) !important;
-    min-height: 750px !important;
+    min-height: 820px !important;
     overflow: auto;
     padding: 14px;
     background:
@@ -194,7 +195,7 @@ h1, h2, h3, h4, p, label, span, div {
     box-shadow: 0 10px 28px rgba(40, 48, 42, 0.12);
 }
 
-.topbar-hist-link {
+.topbar-hist-btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -205,17 +206,13 @@ h1, h2, h3, h4, p, label, span, div {
     color: #ffffff !important;
     font-size: 0.88rem;
     font-weight: 650;
-    text-decoration: none;
-    white-space: nowrap;
     cursor: pointer;
     transition: background 0.15s;
     margin-left: auto;
 }
 
-.topbar-hist-link:hover {
+.topbar-hist-btn:hover {
     background: var(--accent-2);
-    color: #ffffff !important;
-    text-decoration: none;
 }
 
 .topbar-grid {
@@ -630,7 +627,7 @@ div[data-testid="stPageLink"] > a:hover {
 .fb-textarea:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(47, 111, 115, 0.18);
+    box-shadow: 0 0 0 3px rgba(47, 111, 115, 0.18) !important;
 }
 
 .fb-btn-row {
@@ -1467,7 +1464,6 @@ def run_pipeline(uploaded_file):
     st.session_state["receipt_id"] = None
 
 
-# ฟังก์ชันจัดการเรนเดอร์แถบเมนูด้านบนสุุด ควบรวมการฉีดโค้ดสไตล์ทั้งหมดเข้าด้วยกัน
 def render_topbar(result=None):
     import html as _html
 
@@ -1490,27 +1486,29 @@ def render_topbar(result=None):
     else:
         status_html = '<span class="badge badge-ok">OCR + LLM Pipeline พร้อมใช้งาน</span>'
 
-    # ปล่อยคำสั่ง CSS มัดรวมออกมาพร้อมกลุ่มโครงสร้าง HTML แถบเมนูดังกล่าวทันที
     st.markdown(CSS_STYLES, unsafe_allow_html=True)
-    st.markdown(
-        f"""
-        <div class="app-topbar">
-          <div class="topbar-grid">
-            <div class="topbar-left">
-              <span class="brand">RecAipt</span>
-              <div class="topbar-divider"></div>
-              <div class="status-row">
-                {status_html}
+
+    top_col1, top_col2 = st.columns([8, 2])
+    with top_col1:
+        st.markdown(
+            f"""
+            <div class="app-topbar" style="border:none; margin:0; padding:0; background:transparent;">
+              <div class="topbar-grid">
+                <div class="topbar-left">
+                  <span class="brand">RecAipt</span>
+                  <div class="topbar-divider"></div>
+                  <div class="status-row">
+                    {status_html}
+                  </div>
+                </div>
               </div>
             </div>
-            <a href="/history" target="_self" class="topbar-hist-link">
-              &#128218; ประวัติใบเสร็จ
-            </a>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+            """,
+            unsafe_allow_html=True,
+        )
+    with top_col2:
+        if st.button("📚 ประวัติใบเสร็จ", key="topbar_history_redirect", use_container_width=True):
+            st.switch_page("pages/history.py")
 
 
 if "result_json" not in st.session_state:
@@ -1551,7 +1549,7 @@ if "result_json" not in st.session_state:
     )
     st.stop()
 
-# ─── กรณีประมวลผลหน้าต่างตรวจสอบข้อมูล ───
+# ─── กรณีประมวลผลหน้าต่างตรวจสอบข้อมูลผลลัพธ์ ───
 result_json = st.session_state["result_json"]
 render_topbar(result_json)
 
@@ -1743,31 +1741,34 @@ with right:
 
         save_local = st.form_submit_button("ยืนยันข้อมูลบนหน้านี้", type="primary", **stretch_kwargs())
 
-    current_values = {
-        "document_type": document_type,
-        "document_number": document_number,
-        "document_date": document_date,
-        "document_time": document_time,
-        "payment_method": payment_method,
-        "seller_name": seller_name,
-        "seller_tax_id": seller_tax_id,
-        "seller_store_name": seller_store_name,
-        "buyer_name": buyer_name,
-        "buyer_tax_id": buyer_tax_id,
-        "amount_before_tax": amount_before_tax,
-        "vat_rate": vat_rate,
-        "vat_amount": vat_amount,
-        "grand_total": grand_total,
-    }
-    export_payload = build_export_payload(current_values, edited_items)
+current_values = {
+    "document_type": document_type,
+    "document_number": document_number,
+    "document_date": document_date,
+    "document_time": document_time,
+    "payment_method": payment_method,
+    "seller_name": seller_name,
+    "seller_tax_id": seller_tax_id,
+    "seller_store_name": seller_store_name,
+    "buyer_name": buyer_name,
+    "buyer_tax_id": buyer_tax_id,
+    "amount_before_tax": amount_before_tax,
+    "vat_rate": vat_rate,
+    "vat_amount": vat_amount,
+    "grand_total": grand_total,
+}
+export_payload = build_export_payload(current_values, edited_items)
 
-    if save_local:
-        st.session_state["result_json"] = normalize_result(export_payload)
-        st.success("บันทึกค่าที่ตรวจสอบไว้บนหน้านี้แล้ว")
-        st.rerun()
+if save_local:
+    st.session_state["result_json"] = normalize_result(export_payload)
+    st.success("บันทึกค่าที่ตรวจสอบไว้บนหน้านี้แล้ว")
+    st.rerun()
 
+# ─── ย้ายชุดปุ่มส่งออกและบันทึกทั้งหมดกลับเข้ามาอยู่ในฝั่งขวา (with right) ───
+with right:
     st.markdown('<div class="section-band">ส่งออกข้อมูล</div>', unsafe_allow_html=True)
     output_name = (export_payload.get("document_number") or "receipt").replace("/", "-")
+
     dl_col1, dl_col2, dl_col3 = st.columns([1, 1, 1])
     with dl_col1:
         st.download_button(
@@ -1820,12 +1821,12 @@ with right:
             except Exception as exc:
                 st.error(f"บันทึกไม่สำเร็จ: {exc}")
     with act_col2:
-        if st.button("🔄 สแกนใบเสร็จใหม่", **stretch_kwargs()):
-            st.session_state["_pending_reset"] = True
+        if st.button("🔄 สแกนใบเสร็จใหม่", key="cloud_action_new_scan", **stretch_kwargs()):
+            reset_app()
             st.rerun()
     with act_col3:
-        if st.button("📚 ดูประวัติใบเสร็จ", **stretch_kwargs()):
+        if st.button("📚 ดูประวัติใบเสร็จ", key="cloud_action_goto_history", **stretch_kwargs()):
             st.switch_page("pages/history.py")
 
-# โหลด Feedback Modal ไว้บรรลัดท้ายสุด เพื่อไม่ให้สร้าง element บล็อกดันหน้าจอขึ้นลง
+# โหลดโมดอลไว้ล่างสุด
 components.html(FEEDBACK_MODAL_HTML, height=0)
