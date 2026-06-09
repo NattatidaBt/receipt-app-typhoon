@@ -131,37 +131,19 @@ def call_typhoon_llm(ocr_text):
 ให้สกัดข้อมูลออกมาเป็น JSON ตาม Schema นี้
 
 {{
-  "document_type": "ใบกำกับภาษีเต็มรูป|ใบกำกับภาษีอย่างย่อ|ใบเสร็จรับเงิน|อื่นๆ",
-
+  "document_type": null,
+  "document_number": null,
+  "document_date": null,
+  "document_time": null,
   "seller": {{
     "name": null,
     "tax_id": null,
-    "address": null,
-    "telephone": null
+    "store_name": null
   }},
-
   "buyer": {{
     "name": null,
-    "tax_id": null,
-    "address": null
+    "tax_id": null
   }},
-
-  "document_number": null,
-
-  "document_date": null,
-
-  "tax_included": true,
-
-  "amount_before_tax": null,
-
-  "vat_rate": null,
-
-  "vat_amount": null,
-
-  "grand_total": null,
-
-  "payment_method": null,
-
   "items": [
     {{
       "item_description": null,
@@ -169,24 +151,34 @@ def call_typhoon_llm(ocr_text):
       "unit_price": null,
       "subtotal": null
     }}
-  ]
+  ],
+  "financial_totals": {{
+    "amount_before_tax": null,
+    "vat_rate": null,
+    "vat_amount": null,
+    "grand_total": null
+  }},
+  "payment_method": {{
+    "type": null
+  }}
 }}
 
 กฎเพิ่มเติม
 
 - ถ้ามีข้อมูลผู้ซื้อให้ใส่ใน buyer
-- ถ้าไม่มีผู้ซื้อให้ buyer เป็น null
+- ถ้าไม่มีผู้ซื้อ ให้ buyer.name และ buyer.tax_id เป็น null
 - ถ้าพบคำว่า ABB ให้ document_type = ใบกำกับภาษีอย่างย่อ
 - ถ้ามีชื่อผู้ซื้อและเลขผู้เสียภาษีผู้ซื้อ ให้ document_type = ใบกำกับภาษีเต็มรูป
 - document_date ใช้รูปแบบ YYYY-MM-DD
-- amount_before_tax คือยอดก่อน VAT
-- vat_amount คือจำนวน VAT
-- grand_total คือยอดสุทธิ
+- document_time ใช้รูปแบบ HH:MM หรือ null
+- amount_before_tax, vat_rate, vat_amount, grand_total ต้องอยู่ใน financial_totals เท่านั้น
 - quantity ต้องเป็นตัวเลข
 - unit_price ต้องเป็นตัวเลข
 - subtotal ต้องเป็นตัวเลข
 - items ต้องแยกเป็นรายแถวสินค้า/บริการเท่านั้น: 1 object ต่อ 1 รายการ ห้ามรวมสินค้าหลายรายการไว้ใน item_description เดียว
-- ถ้าใบเสร็จเป็นร้านค้าปลีก เช่น 7-Eleven หรือแสดง VAT รวมในราคา ให้ tax_included = true และห้ามบวก VAT เพิ่มซ้ำจากยอดสินค้า
+- payment_method ต้องเป็น object ที่มี key type เท่านั้น
+- ห้ามเพิ่ม field นอกเหนือจาก Schema ที่กำหนด
+- ถ้าใบเสร็จเป็นร้านค้าปลีก เช่น 7-Eleven หรือแสดง VAT รวมในราคา ห้ามบวก VAT เพิ่มซ้ำจากยอดสินค้า
 - ถ้าไม่เห็น VAT แยกชัดเจน แต่เห็นยอดสุทธิรวม ให้ประมาณ amount_before_tax = grand_total / 1.07 และ vat_amount = grand_total - amount_before_tax เฉพาะกรณีมีข้อความบ่งชี้ว่าเป็น VAT 7%
 
 ตอบกลับเฉพาะ JSON เท่านั้น
