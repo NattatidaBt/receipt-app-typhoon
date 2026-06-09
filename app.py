@@ -310,7 +310,7 @@ h1, h2, h3, h4, p, label, span, div {
 
 .upload-wrap {
     max-width: 860px;
-    margin: 32px auto 16px;
+    margin: 44px auto 20px;
     padding: 0 10px;
 }
 
@@ -340,8 +340,8 @@ h1, h2, h3, h4, p, label, span, div {
     background: var(--panel) !important;
     border: 2px dashed #b7aa91 !important;
     border-radius: 8px !important;
-    min-height: 130px !important;
-    padding: 22px 30px !important;
+    min-height: 190px !important;
+    padding: 30px !important;
 }
 
 [data-testid="stFileUploaderDropzone"]:hover {
@@ -349,59 +349,15 @@ h1, h2, h3, h4, p, label, span, div {
     background: #fffffb !important;
 }
 
-/* ซ่อนข้อความ EN แล้วแทนด้วยภาษาไทย */
-[data-testid="stFileUploaderDropzoneInstructions"] {
-    position: relative;
-}
-
-[data-testid="stFileUploaderDropzoneInstructions"] > div {
-    visibility: hidden;
-    height: 0;
-    overflow: hidden;
-}
-
-[data-testid="stFileUploaderDropzoneInstructions"]::after {
-    content: "";
-    display: block;
-    visibility: visible;
-}
-
-/* บรรทัดหลัก */
-[data-testid="stFileUploaderDropzoneInstructions"] > div > span {
-    visibility: hidden;
-    font-size: 0 !important;
-}
-
-[data-testid="stFileUploaderDropzoneInstructions"] > div > span::before {
-    visibility: visible;
+[data-testid="stFileUploaderDropzoneInstructions"] span {
+    color: var(--ink) !important;
     font-size: 1.05rem !important;
-    color: var(--ink);
-    content: "ลากและวางไฟล์ที่นี่";
+    line-height: 1.5 !important;
 }
 
-/* บรรทัดรอง */
-[data-testid="stFileUploaderDropzoneInstructions"] > div > small {
-    visibility: hidden;
-    font-size: 0 !important;
-}
-
-[data-testid="stFileUploaderDropzoneInstructions"] > div > small::before {
-    visibility: visible;
-    font-size: 0.92rem !important;
-    color: var(--muted);
-    content: "จำกัด 200MB ต่อไฟล์  •  JPG, JPEG, PNG, PDF";
-}
-
-/* ปุ่ม Browse files → เรียกดูไฟล์ */
-[data-testid="stFileUploaderDropzone"] button {
-    font-size: 0 !important;
-    min-width: 100px;
-}
-
-[data-testid="stFileUploaderDropzone"] button::after {
-    content: "เรียกดูไฟล์";
-    font-size: 0.95rem !important;
-    font-weight: 640;
+[data-testid="stFileUploaderDropzoneInstructions"] small {
+    color: var(--muted) !important;
+    font-size: 0.96rem !important;
 }
 
 .soft-callout {
