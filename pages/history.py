@@ -56,8 +56,8 @@ header, footer, #MainMenu,
 .hist-total{ color: var(--accent); font-size: 1.08rem; font-weight: 760; text-align: right; }
 .hist-hdr {
     display: grid;
-    grid-template-columns: 60px 1fr 1fr 1fr 110px 80px 80px;
-    gap: 10px; padding: 6px 16px;
+    grid-template-columns: 0.6fr 2.2fr 1.2fr 1.1fr 1.0fr 0.8fr 0.7fr;
+    gap: 10px; padding: 6px 0;
     color: var(--muted); font-size: 0.86rem; font-weight: 650;
     border-bottom: 1px solid var(--line); margin-bottom: 6px;
 }
@@ -97,7 +97,7 @@ div.stButton > button[kind="primary"]:hover { background: var(--accent-2) !impor
     background: #fffefb !important; border-color: #cfc8b8 !important; border-radius: 8px !important;
 }
 @media (max-width: 900px) {
-    .hist-hdr { grid-template-columns: 50px 1fr 1fr 90px 64px 64px; }
+    .hist-hdr { grid-template-columns: 0.6fr 2.2fr 1.2fr 1.1fr 1.0fr 0.8fr 0.7fr; }
 }
 </style>
 """
@@ -317,13 +317,11 @@ st.markdown(f'<div class="section-band">รายการใบเสร็จ 
 if not rows:
     st.markdown('<div class="empty-state">ไม่พบใบเสร็จที่ตรงกับเงื่อนไข</div>', unsafe_allow_html=True)
 else:
-    st.markdown(
-        '<div class="hist-hdr">'
-        '<span>ID</span><span>เลขที่เอกสาร / ร้านค้า</span><span>วันที่</span>'
-        '<span>ยอดสุทธิ</span><span>สถานะ</span><span>ดูรายละเอียด</span><span>ลบ</span>'
-        "</div>",
-        unsafe_allow_html=True,
-    )
+    # Header row — ใช้ st.columns เดียวกับ data rows เพื่อให้ตรงกันทุก viewport
+    _h = st.columns([0.6, 2.2, 1.2, 1.1, 1.0, 0.8, 0.7])
+    for _col, _label in zip(_h, ["ID", "เลขที่เอกสาร / ร้านค้า", "วันที่", "ยอดสุทธิ", "สถานะ", "ดูรายละเอียด", "ลบ"]):
+        _col.markdown(f'<div style="color:var(--muted);font-size:0.86rem;font-weight:650;padding:4px 0 6px;">{_label}</div>', unsafe_allow_html=True)
+    st.markdown('<hr style="margin:0 0 6px;border:none;border-top:1px solid var(--line);">', unsafe_allow_html=True)
 
     for row in rows:
         rid = row.get("id")
