@@ -309,18 +309,23 @@ h1, h2, h3, h4, p, label, span, div {
 }
 
 .upload-wrap {
-    max-width: 860px;
-    margin: 44px auto 20px;
+    max-width: 960px;
+    margin: 0 auto;
     padding: 0 10px;
+}
+
+.upload-page-shell {
+    width: min(960px, calc(100vw - 48px));
+    margin: clamp(28px, 8vh, 76px) auto 0;
 }
 
 .upload-title {
     color: var(--ink);
-    font-size: clamp(1.7rem, 2.4vw, 2.45rem);
+    font-size: clamp(1.65rem, 2.2vw, 2.25rem);
     font-weight: 760;
     line-height: 1.25;
     text-align: center;
-    margin-bottom: 8px;
+    margin: 0 0 8px;
 }
 
 .upload-subtitle {
@@ -328,21 +333,27 @@ h1, h2, h3, h4, p, label, span, div {
     font-size: 1.08rem;
     line-height: 1.65;
     text-align: center;
-    margin-bottom: 24px;
+    margin: 0 auto 22px;
+    max-width: 760px;
+}
+
+.upload-tip {
+    max-width: 760px;
+    margin: 28px auto 0;
 }
 
 /* ─── FILE UPLOADER: จัดกึ่งกลาง X,Y และปุ่มสีขาว ─── */
 [data-testid="stFileUploader"] {
     max-width: 820px;
-    margin: 0 auto;
+    margin: 0 auto !important;
 }
 
 [data-testid="stFileUploaderDropzone"] {
     background: var(--panel) !important;
     border: 2px dashed #b7aa91 !important;
     border-radius: 8px !important;
-    min-height: 190px !important;
-    padding: 30px !important;
+    min-height: 168px !important;
+    padding: 26px 30px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -798,10 +809,7 @@ div[data-testid="stPageLink"] > a:hover {
 
 
 def stretch_kwargs():
-    version = tuple(int(part) for part in st.__version__.split(".")[:2] if part.isdigit())
-    if version >= (1, 50):
-        return {"width": "stretch"}
-    return {"use_container_width": True}
+    return {"width": "stretch"}
 
 
 # ─── Feedback modal ─────────────────────────────────────────────────────────
@@ -1684,19 +1692,20 @@ def render_topbar(result=None):
             unsafe_allow_html=True,
         )
     with top_col2:
-        if st.button("📚 ประวัติใบเสร็จ", key="topbar_history_redirect", use_container_width=True):
+        if st.button("📚 ประวัติใบเสร็จ", key="topbar_history_redirect", **stretch_kwargs()):
             st.switch_page("pages/history.py")
 
 
 if "result_json" not in st.session_state:
     render_topbar()
-    components.html(FEEDBACK_MODAL_HTML, height=0)
     st.markdown(
         """
-        <div class="upload-wrap">
-          <div class="upload-title">อัปโหลดใบเสร็จเพื่อเริ่มตรวจสอบ</div>
-          <div class="upload-subtitle">
-            รองรับไฟล์ JPG, PNG และ PDF หน้าแรก ระบบจะปรับภาพด้วย Method 4 แล้วส่งเข้า Typhoon OCR และ Typhoon LLM
+        <div class="upload-page-shell">
+          <div class="upload-wrap">
+            <div class="upload-title">อัปโหลดใบเสร็จเพื่อเริ่มตรวจสอบ</div>
+            <div class="upload-subtitle">
+              รองรับไฟล์ JPG, PNG และ PDF หน้าแรก ระบบจะปรับภาพด้วย Method 4 แล้วส่งเข้า Typhoon OCR และ Typhoon LLM
+            </div>
           </div>
         </div>
         """,
@@ -1715,7 +1724,7 @@ if "result_json" not in st.session_state:
 
     st.markdown(
         """
-        <div class="upload-wrap">
+        <div class="upload-tip">
           <div class="soft-callout">
             คำแนะนำ: วางไฟล์ในพื้นที่อัปโหลดหรือลากมาวางได้โดยตรง หลังประมวลผลแล้วให้ตรวจช่องสีเหลืองก่อน
             จากนั้นใช้ Tab เพื่อเลื่อนไปยังช่องถัดไป และส่งออกข้อมูลเมื่อยืนยันครบถ้วน

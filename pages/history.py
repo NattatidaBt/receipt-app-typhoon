@@ -105,10 +105,7 @@ st.markdown(CSS, unsafe_allow_html=True)
 
 
 def stretch_kwargs():
-    version = tuple(int(part) for part in st.__version__.split(".")[:2] if part.isdigit())
-    if version >= (1, 50):
-        return {"width": "stretch"}
-    return {"use_container_width": True}
+    return {"width": "stretch"}
 
 
 # ── REST API helpers (ไม่ใช้ supabase-py) ────────────────────────────────────
