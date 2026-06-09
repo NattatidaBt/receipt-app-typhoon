@@ -179,26 +179,47 @@ def fetch_receipts(search_text="", date_from=None, date_to=None, status_filter="
     supabase = init_supabase()
     if supabase is None:
         return []
-    query = (
-        supabase.table("receipts")
-        .select("id, receipt_type, document_number, document_date, grand_total, status, created_at, original_filename, companies!receipts_seller_id_fkey(name, tax_id)")
-        .order("created_at", desc=True)
-        .limit(200)
-    )
-    if date_from:
-        query = query.gte("document_date", str(date_from))
-    if date_to:
-        query = query.lte("document_date", str(date_to))
-    if status_filter != "ทั้งหมด":
-        query = query.eq("status", status_filter)
-    res = query.execute()
-    rows = res.data or []
+    try:
+        query = (
+            supabase.table("receipts")
+            .select("id, receipt_type, document_number, document_date, grand_total, status, created_at, original_filename, seller:companies!receipts_seller_id_fkey(name, tax_id)")
+            .order("created_at", desc=True)
+            .limit(200)
+        )
+        if date_from:
+            query = query.gte("document_date", str(date_from))
+        if date_to:
+            query = query.lte("document_date", str(date_to))
+        if status_filter != "ทั้งหมด":
+            query = query.eq("status", status_filter)
+        res = query.execute()
+        rows = res.data or []
+    except Exception:
+        # fallback: ดึงโดยไม่ join companies ถ้า foreign key hint ไม่ work
+        try:
+            query2 = (
+                supabase.table("receipts")
+                .select("id, receipt_type, document_number, document_date, grand_total, status, created_at, original_filename")
+                .order("created_at", desc=True)
+                .limit(200)
+            )
+            if date_from:
+                query2 = query2.gte("document_date", str(date_from))
+            if date_to:
+                query2 = query2.lte("document_date", str(date_to))
+            if status_filter != "ทั้งหมด":
+                query2 = query2.eq("status", status_filter)
+            res2 = query2.execute()
+            rows = res2.data or []
+        except Exception as e2:
+            st.error(f"ไม่สามารถดึงข้อมูลได้: {e2}")
+            return []
     if search_text:
         q = search_text.lower()
         rows = [
             r for r in rows
             if q in str(r.get("document_number", "")).lower()
-            or q in str((r.get("companies") or {}).get("name", "")).lower()
+            or q in str((r.get("seller") or r.get("companies") or {}).get("name", "")).lower()
             or q in str(r.get("document_date", "")).lower()
         ]
     return rows
@@ -208,22 +229,37 @@ def fetch_receipt_detail(receipt_id):
     supabase = init_supabase()
     if supabase is None:
         return None, []
-    r_res = (
-        supabase.table("receipts")
-        .select("*, companies!receipts_seller_id_fkey(name, tax_id, address, telephone), buyer:companies!receipts_buyer_id_fkey(name, tax_id, address)")
-        .eq("id", receipt_id)
-        .single()
-        .execute()
-    )
+    try:
+        r_res = (
+            supabase.table("receipts")
+            .select("*, seller:companies!receipts_seller_id_fkey(name, tax_id, address, telephone), buyer:companies!receipts_buyer_id_fkey(name, tax_id, address)")
+            .eq("id", receipt_id)
+            .single()
+            .execute()
+        )
+    except Exception:
+        try:
+            r_res = (
+                supabase.table("receipts")
+                .select("*")
+                .eq("id", receipt_id)
+                .single()
+                .execute()
+            )
+        except Exception:
+            return None, []
     receipt = r_res.data
-    i_res = (
-        supabase.table("receipt_items")
-        .select("*")
-        .eq("receipt_id", receipt_id)
-        .order("id")
-        .execute()
-    )
-    items = i_res.data or []
+    try:
+        i_res = (
+            supabase.table("receipt_items")
+            .select("*")
+            .eq("receipt_id", receipt_id)
+            .order("id")
+            .execute()
+        )
+        items = i_res.data or []
+    except Exception:
+        items = []
     return receipt, items
 
 
