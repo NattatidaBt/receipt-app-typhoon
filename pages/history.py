@@ -1,4 +1,20 @@
-﻿"""
+﻿import requests as _requests
+
+def test_direct():
+    url = st.secrets.get("SUPABASE_URL")
+    key = st.secrets.get("SUPABASE_KEY")
+    r = _requests.get(
+        f"{url}/rest/v1/receipts?select=id&limit=1",
+        headers={
+            "apikey": key,
+            "Authorization": f"Bearer {key}",
+        }
+    )
+    st.write("Status:", r.status_code)
+    st.write("Response:", r.text[:200])
+
+test_direct()
+"""
 pages/history.py  — RecAipt Receipt History
 หน้าประวัติใบเสร็จที่บันทึกลง Supabase แล้ว
 รองรับ: ดูรายการ, ค้นหา, ดูรายละเอียด, ลบ
@@ -519,6 +535,7 @@ else:
             except Exception as e:
                 st.error(f"DEBUG exception type: {type(e).__name__}")
                 st.error(f"DEBUG exception: {e}")
+
                 import traceback
                 st.code(traceback.format_exc())
                 return []
