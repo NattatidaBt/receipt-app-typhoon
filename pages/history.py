@@ -53,7 +53,7 @@ header, footer, #MainMenu,
 .hist-id   { color: var(--muted); font-size: 0.88rem; font-weight: 650; }
 .hist-num  { color: var(--ink); font-size: 0.98rem; font-weight: 740; }
 .hist-sub2 { color: var(--muted); font-size: 0.88rem; margin-top: 2px; }
-.hist-total{ color: var(--accent); font-size: 1.08rem; font-weight: 760; text-align: right; }
+.hist-total{ color: var(--accent); font-size: 1.08rem; font-weight: 760; text-align: right; padding-right: 12px; }
 .hist-hdr {
     display: grid;
     grid-template-columns: 0.6fr 2.2fr 1.2fr 1.1fr 1.0fr 0.8fr 0.7fr;
@@ -320,7 +320,8 @@ else:
     # Header row — ใช้ st.columns เดียวกับ data rows เพื่อให้ตรงกันทุก viewport
     _h = st.columns([0.6, 2.2, 1.2, 1.1, 1.0, 0.8, 0.7])
     for _col, _label in zip(_h, ["ID", "เลขที่เอกสาร / ร้านค้า", "วันที่", "ยอดสุทธิ", "สถานะ", "ดูรายละเอียด", "ลบ"]):
-        _col.markdown(f'<div style="color:var(--muted);font-size:0.86rem;font-weight:650;padding:4px 0 6px;">{_label}</div>', unsafe_allow_html=True)
+        _style = "text-align:right;padding-right:12px;" if _label == "ยอดสุทธิ" else ""
+        _col.markdown(f'<div style="color:var(--muted);font-size:0.86rem;font-weight:650;padding:4px 0 6px;{_style}">{_label}</div>', unsafe_allow_html=True)
     st.markdown('<hr style="margin:0 0 6px;border:none;border-top:1px solid var(--line);">', unsafe_allow_html=True)
 
     for row in rows:
