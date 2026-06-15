@@ -158,7 +158,7 @@ h1, h2, h3, h4, p, label, span, div {
     position: sticky;
     top: 0;
     z-index: 20;
-    margin: 0 -22px 12px -22px;
+    margin: 0 -22px 4px -22px !important;
     padding: 12px 28px;
     background: var(--bg);
     border-bottom: 1.5px solid var(--line);
@@ -168,7 +168,7 @@ h1, h2, h3, h4, p, label, span, div {
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: 8px;
-    margin-top: 0px !important;
+    margin-top: 4px !important;
 }
 
 .pane-head {
@@ -667,13 +667,12 @@ div[data-testid="stPageLink"] > a:hover {
 .action-pad {
     position: sticky;
     bottom: 0;
-    z-index: 12;
+    z-index: 99;
     padding: 12px;
     margin-top: 12px;
-    background: rgba(251, 250, 247, 0.96);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    box-shadow: 0 -8px 24px rgba(40, 48, 42, 0.08);
+    background: rgba(251, 250, 247, 0.98);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
 }
 
 .kbd {
@@ -1858,11 +1857,19 @@ with right:
             "net-payable",
         )
 
-    st.markdown('<div class="section-band">ดำเนินการต่อ</div>', unsafe_allow_html=True)
-    if st.button("🔄 สแกนใบเสร็จใหม่", key="cloud_action_new_scan", **stretch_kwargs()):
-        reset_app()
-        st.rerun()
+    st.markdown('<div class="action-pad">', unsafe_allow_html=True)
 
+    act_col1, act_col2 = st.columns([1, 1])
+
+    with act_col1:
+        save_local = st.form_submit_button("ยืนยันข้อมูลบนหน้านี้", type="primary", **stretch_kwargs())
+
+    with act_col2:
+        if st.button("🔄 สแกนใบเสร็จใหม่", key="cloud_action_new_scan", **stretch_kwargs()):
+            reset_app()
+            st.rerun()
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # โหลดโมดอลไว้ล่างสุด
 components.html(FEEDBACK_MODAL_HTML, height=0)
