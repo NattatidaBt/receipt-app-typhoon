@@ -150,6 +150,25 @@ div[data-testid="stVerticalBlock"]:has(> div [data-testid="element-container"] .
     gap: 0 !important;
 }
 
+/* ปิดพื้นที่ว่างจาก iframe ของ Feedback Modal ที่ซ่อนไว้ท้ายหน้า */
+iframe[title="st.iframe"],
+[data-testid="stIFrame"],
+[data-testid="stCustomComponentV1"] {
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+}
+
+[data-testid="stVerticalBlock"]:has(> [data-testid="element-container"] [data-testid="stIFrame"]),
+[data-testid="stVerticalBlock"]:has(> [data-testid="element-container"] [data-testid="stCustomComponentV1"]) {
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
 h1, h2, h3, h4, p, label, span, div {
     letter-spacing: 0 !important;
 }
