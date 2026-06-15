@@ -1857,19 +1857,11 @@ with right:
             "net-payable",
         )
 
-    st.markdown('<div class="action-pad">', unsafe_allow_html=True)
+    st.markdown('<div class="section-band">ดำเนินการต่อ</div>', unsafe_allow_html=True)
+    if st.button("🔄 สแกนใบเสร็จใหม่", key="cloud_action_new_scan", **stretch_kwargs()):
+        reset_app()
+        st.rerun()
 
-    act_col1, act_col2 = st.columns([1, 1])
-
-    with act_col1:
-        save_local = st.form_submit_button("ยืนยันข้อมูลบนหน้านี้", type="primary", **stretch_kwargs())
-
-    with act_col2:
-        if st.button("🔄 สแกนใบเสร็จใหม่", key="cloud_action_new_scan", **stretch_kwargs()):
-            reset_app()
-            st.rerun()
-
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # โหลดโมดอลไว้ล่างสุด
 components.html(FEEDBACK_MODAL_HTML, height=0)
