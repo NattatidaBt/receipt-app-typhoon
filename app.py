@@ -95,6 +95,105 @@ CSS_STYLES = """
     --bad-ink: #91382d;
 }
 
+/* ─── Force light mode บน Streamlit Cloud (dark-mode override) ─── */
+html[data-theme="dark"],
+html[data-theme="dark"] body,
+html[data-theme="dark"] .stApp {
+    color-scheme: light !important;
+}
+
+html[data-theme="dark"] {
+    --bg: #f3f1ec !important;
+    --panel: #fbfaf7 !important;
+    --panel-2: #f7f3ea !important;
+    --ink: #24302f !important;
+    --muted: #64706d !important;
+    --line: #ddd8cc !important;
+    --accent: #2f6f73 !important;
+    --accent-2: #285e62 !important;
+    --ok-bg: #e8f2e7 !important;
+    --ok-line: #9abe98 !important;
+    --ok-ink: #2c6330 !important;
+    --warn-bg: #fff3d8 !important;
+    --warn-line: #dfb65b !important;
+    --warn-ink: #75520f !important;
+    --bad-bg: #fae4e0 !important;
+    --bad-line: #d9958d !important;
+    --bad-ink: #91382d !important;
+}
+
+html[data-theme="dark"] .stApp,
+html[data-theme="dark"] [data-testid="stAppViewContainer"],
+html[data-theme="dark"] [data-testid="stMain"],
+html[data-theme="dark"] section.main,
+html[data-theme="dark"] .main .block-container {
+    background-color: #f3f1ec !important;
+    color: #24302f !important;
+}
+
+html[data-theme="dark"] .stTextInput input,
+html[data-theme="dark"] .stTextArea textarea,
+html[data-theme="dark"] .stNumberInput input,
+html[data-theme="dark"] .stSelectbox div[data-baseweb="select"] > div,
+html[data-theme="dark"] [data-testid="stDataFrame"],
+html[data-theme="dark"] [data-baseweb="textarea"],
+html[data-theme="dark"] [data-baseweb="input"] {
+    background-color: #fffefb !important;
+    color: #24302f !important;
+    border-color: #cfc8b8 !important;
+}
+
+html[data-theme="dark"] label,
+html[data-theme="dark"] p,
+html[data-theme="dark"] span,
+html[data-theme="dark"] div,
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3 {
+    color: #24302f !important;
+}
+
+html[data-theme="dark"] div.stButton > button,
+html[data-theme="dark"] div.stDownloadButton > button,
+html[data-theme="dark"] div.stFormSubmitButton > button {
+    background: #fffdf8 !important;
+    color: #24302f !important;
+    border-color: #b9af9c !important;
+}
+
+html[data-theme="dark"] div.stButton > button[kind="primary"],
+html[data-theme="dark"] div.stFormSubmitButton > button[kind="primary"] {
+    background: #2f6f73 !important;
+    color: #ffffff !important;
+    border-color: #2f6f73 !important;
+}
+
+html[data-theme="dark"] .stNumberInput button,
+html[data-theme="dark"] .stNumberInput [data-testid="stNumberInputStepDown"],
+html[data-theme="dark"] .stNumberInput [data-testid="stNumberInputStepUp"] {
+    background: #fffdf8 !important;
+    color: #24302f !important;
+    border-color: #b9af9c !important;
+}
+
+html[data-theme="dark"] [data-testid="stFileUploaderDropzone"] {
+    background: #fbfaf7 !important;
+    border-color: #b7aa91 !important;
+}
+
+html[data-theme="dark"] [data-testid="stFileUploaderDropzone"] button,
+html[data-theme="dark"] [data-testid="stFileUploader"] button {
+    background-color: #fffdf8 !important;
+    color: #24302f !important;
+    border-color: #b9af9c !important;
+}
+
+/* OCR raw text box (dark bg พิเศษ) ── ปล่อยให้ dark ตามที่ตั้งใจไว้ */
+.ocr-raw-box {
+    color-scheme: dark;
+}
+/* ──────────────────────────────────────────────────────────────── */
+
 header, footer, #MainMenu,
 [data-testid="stToolbar"],
 [data-testid="stDecoration"] {
