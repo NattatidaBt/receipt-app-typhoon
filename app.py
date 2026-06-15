@@ -636,8 +636,7 @@ div[data-testid="stPageLink"] > a:hover {
     opacity: 1 !important;
 }
 
-[data-testid="stDataFrame"],
-[data-testid="stDataEditor"] {
+[data-testid="stDataFrame"] {
     border: 1px solid var(--line);
     border-radius: 8px;
     overflow: hidden;
@@ -645,76 +644,19 @@ div[data-testid="stPageLink"] > a:hover {
     color: var(--ink) !important;
 }
 
-[data-testid="stDataFrame"] *,
-[data-testid="stDataEditor"] * {
+[data-testid="stDataFrame"] * {
     color: var(--ink) !important;
 }
 
 [data-testid="stDataFrame"] div,
-[data-testid="stDataFrame"] span,
-[data-testid="stDataEditor"] div,
-[data-testid="stDataEditor"] span {
+[data-testid="stDataFrame"] span {
     background-color: transparent;
 }
 
-[data-testid="stDataFrame"] button,
-[data-testid="stDataEditor"] button {
+[data-testid="stDataFrame"] button {
     background: #fffdf8 !important;
     color: var(--ink) !important;
     border-color: #b9af9c !important;
-}
-
-/* Force data editor wrapper สีขาว */
-[data-testid="stDataEditor"] > div,
-[data-testid="stDataEditor"] > div > div {
-    background: #fffdf8 !important;
-}
-
-/* st.code block — force light */
-[data-testid="stCode"] pre,
-[data-testid="stCodeBlock"] pre,
-.stCode pre,
-pre {
-    background: #f5f2eb !important;
-    color: #24302f !important;
-    border: 1px solid #ddd8cc !important;
-}
-
-/* text_area disabled (OCR box) */
-.stTextArea textarea:disabled,
-.stTextArea [disabled] {
-    background: #f5f2eb !important;
-    color: #24302f !important;
-    border-color: #cfc8b8 !important;
-    opacity: 1 !important;
-    font-family: ui-monospace, SFMono-Regular, Consolas, monospace !important;
-    font-size: 0.88rem !important;
-}
-
-/* dark-mode overrides for data editor + code */
-html[data-theme="dark"] [data-testid="stDataFrame"],
-html[data-theme="dark"] [data-testid="stDataEditor"],
-html[data-theme="dark"] [data-testid="stDataEditor"] > div,
-html[data-theme="dark"] [data-testid="stDataEditor"] > div > div {
-    background: #fffdf8 !important;
-    background-color: #fffdf8 !important;
-    color: #24302f !important;
-}
-
-html[data-theme="dark"] pre,
-html[data-theme="dark"] .stCode pre,
-html[data-theme="dark"] [data-testid="stCode"] pre,
-html[data-theme="dark"] [data-testid="stCodeBlock"] pre {
-    background: #f5f2eb !important;
-    color: #24302f !important;
-    border-color: #ddd8cc !important;
-}
-
-html[data-theme="dark"] .stTextArea textarea:disabled,
-html[data-theme="dark"] .stTextArea [disabled] {
-    background: #f5f2eb !important;
-    color: #24302f !important;
-    opacity: 1 !important;
 }
 
 [data-testid="stAlert"] *,
@@ -1665,14 +1607,7 @@ with left:
 
     with st.expander("ข้อความ OCR ดิบ"):
         st.caption("แสดงแบบจัดบรรทัดเพื่ออ่านง่ายขึ้น โดยยังคงข้อความ OCR ต้นทางไว้สำหรับตรวจสอบ")
-        st.text_area(
-            label="ocr_raw",
-            value=st.session_state.get("formatted_ocr_text", st.session_state.get("raw_text", "")),
-            height=320,
-            disabled=True,
-            label_visibility="collapsed",
-            key="ocr_raw_display_box",
-        )
+        st.code(st.session_state.get("formatted_ocr_text", st.session_state.get("raw_text", "")), language="text")
         copy_button(
             "คัดลอกข้อความ OCR",
             st.session_state.get("formatted_ocr_text", st.session_state.get("raw_text", "")),
