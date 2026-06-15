@@ -158,7 +158,7 @@ h1, h2, h3, h4, p, label, span, div {
     position: sticky;
     top: 0;
     z-index: 20;
-    margin: 0 -22px 12px -22px;
+    margin: 0 -22px 22px -22px;
     padding: 12px 28px;
     background: var(--bg);
     border-bottom: 1.5px solid var(--line);
@@ -665,9 +665,6 @@ div[data-testid="stPageLink"] > a:hover {
 }
 
 .action-pad {
-    position: sticky;
-    bottom: 0;
-    z-index: 12;
     padding: 12px;
     margin-top: 12px;
     background: rgba(251, 250, 247, 0.96);
