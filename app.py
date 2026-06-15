@@ -166,20 +166,16 @@ div[data-testid="stIFrame"] {
 }
 
 /* ปิดพื้นที่ว่างจาก iframe ของ Feedback Modal ที่ซ่อนไว้ท้ายหน้า */
-div[data-testid="element-container"]:has(iframe[height="0"]) {
+div[data-testid="element-container"]:has(div[data-testid="stIFrame"]):not([data-testid="stColumn"] *) {
+    display: none !important;
     height: 0 !important;
     min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
-    overflow: hidden !important;
 }
 
-div[data-testid="element-container"]:has(iframe[height="0"]) div[data-testid="stIFrame"] {
-    height: 0 !important;
-    min-height: 0 !important;
-    border: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
+section.main, .main {
+    padding-bottom: 0px !important;
 }
 
 h1, h2, h3, h4, p, label, span, div {
