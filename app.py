@@ -1,4 +1,4 @@
-﻿import base64
+import base64
 import csv
 import inspect
 import json
@@ -117,6 +117,7 @@ header, footer, #MainMenu,
 [data-testid="stMainBlockContainer"] {
     padding-top: 0px !important;
     margin-top: 0px !important;
+    padding-bottom: 24px !important;
 }
 
 div[data-testid="stVerticalBlockBorderWrapper"]:has(div[data-testid="stHorizontalBlock"]) {
@@ -132,7 +133,16 @@ div[data-testid="stVerticalBlock"]:has(> div [data-testid="element-container"] .
 [data-testid="stHorizontalBlock"] {
     margin-top: 0px !important; 
     padding-top: 0px !important;
+    margin-bottom: 8px !important; 
     gap: 16px !important; 
+}
+
+[data-testid="stColumn"] [data-testid="stVerticalBlock"] {
+    gap: 10px !important;
+}
+
+div[data-testid="stIFrame"] {
+    margin-bottom: 0px !important;
 }
 
 [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
@@ -155,8 +165,8 @@ div[data-testid="stVerticalBlock"]:has(> div [data-testid="element-container"] .
     margin-bottom: 24px !important;
 }
 
-/* ปิดพื้นที่ว่างจาก iframe ของ Feedback Modal ที่ซ่อนไว้ท้ายหน้า (เจาะจงเฉพาะตัวสุดท้ายของหน้า) */
-[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="element-container"]:last-child:has([data-testid="stIFrame"]) {
+/* ปิดพื้นที่ว่างจาก iframe ของ Feedback Modal ที่ซ่อนไว้ท้ายหน้า */
+div[data-testid="element-container"]:has(iframe[height="0"]) {
     height: 0 !important;
     min-height: 0 !important;
     margin: 0 !important;
@@ -164,10 +174,12 @@ div[data-testid="stVerticalBlock"]:has(> div [data-testid="element-container"] .
     overflow: hidden !important;
 }
 
-[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="element-container"]:last-child:has([data-testid="stIFrame"]) [data-testid="stIFrame"] {
+div[data-testid="element-container"]:has(iframe[height="0"]) div[data-testid="stIFrame"] {
     height: 0 !important;
     min-height: 0 !important;
     border: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 h1, h2, h3, h4, p, label, span, div {
@@ -178,10 +190,11 @@ h1, h2, h3, h4, p, label, span, div {
     position: sticky;
     top: 0;
     z-index: 20;
-    margin: 0 -22px 24px -22px;
-    padding: 12px 28px;
-    background: var(--bg);
-    border-bottom: 1.5px solid var(--line);
+    margin: 0 -22px 32px -22px;
+    padding: 18px 28px 16px;
+    background: rgba(243, 241, 236, 0.94);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--line);
 }
 
 .pane {
@@ -234,8 +247,9 @@ h1, h2, h3, h4, p, label, span, div {
 
 /* ล็อกความสูงกล่องแสดงภาพฝั่งซ้ายให้เกาะยืดตัวยาวอิงตามคอลัมน์ฟอร์มขวาเพื่อปิดรอยแหว่งครีม */
 .image-scroll {
-    height: calc(100vh - 210px) !important;
-    min-height: 820px !important;
+    height: calc(100vh - 260px) !important;
+    min-height: 520px !important;
+    max-height: 780px !important;
     overflow: auto;
     padding: 14px;
     background:
@@ -928,10 +942,6 @@ FEEDBACK_MODAL_HTML = """
     new_receipt: [
       "ใช้ง่ายดี", "OCR ถูกต้อง", "OCR ผิดพลาด",
       "ช้าเกินไป", "ข้อมูลหายบางส่วน", "อยากได้ฟีเจอร์เพิ่ม"
-    ],
-    supabase: [
-      "บันทึกได้ปกติ", "บันทึกแก้ไขได้ดี", "เกิด Error",
-      "ข้อมูลไม่ครบ", "อยากให้มีหน้าประวัติ"
     ]
   };
 
@@ -966,13 +976,8 @@ FEEDBACK_MODAL_HTML = """
 
     document.getElementById("fb-text").value = "";
 
-    if (_trigger === "supabase") {
-      document.getElementById("fb-modal-title").textContent = "บันทึกข้อมูลเรียบร้อยแล้ว 🎉";
-      document.getElementById("fb-modal-sub").textContent = "ช่วยให้คะแนนและแนะนำได้เลยครับ";
-    } else {
-      document.getElementById("fb-modal-title").textContent = "เริ่มใบใหม่แล้ว — ช่วยให้คะแนนด้วยนะ";
-      document.getElementById("fb-modal-sub").textContent = "ความคิดเห็นของคุณช่วยให้ RecAipt ดีขึ้นได้จริงๆ ครับ";
-    }
+    document.getElementById("fb-modal-title").textContent = "เริ่มใบใหม่แล้ว — ช่วยให้คะแนนด้วยนะ";
+    document.getElementById("fb-modal-sub").textContent = "ความคิดเห็นของคุณช่วยให้ RecAipt ดีขึ้นได้จริงๆ ครับ";
 
     document.getElementById("fb-overlay").style.display = "flex";
   };
@@ -1450,11 +1455,36 @@ def copy_button(label, text, key):
     payload = json.dumps(str(text), ensure_ascii=False)
     components.html(
         f"""
-        <button id="copy-{key}" style="
-            width:100%;min-height:44px;border-radius:8px;border:1px solid #b9af9c;
-            background:#fffdf8;color:#24302f;font-size:16px;font-weight:720;cursor:pointer;">
-            {label}
-        </button>
+        <style>
+        body {{
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: transparent;
+        }}
+        #copy-{key} {{
+            width: 100%;
+            height: 44px;
+            border-radius: 8px;
+            border: 1px solid #b9af9c;
+            background: #fffdf8;
+            color: #24302f;
+            font-size: 16px;
+            font-weight: 720;
+            cursor: pointer;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }}
+        #copy-{key}:hover {{
+            border-color: #2f6f73;
+            color: #285e62;
+            background: #eef4f4;
+        }}
+        </style>
+        <button id="copy-{key}">{label}</button>
         <script>
         const btn = document.getElementById("copy-{key}");
         btn.addEventListener("click", async () => {{
@@ -1464,7 +1494,7 @@ def copy_button(label, text, key):
         }});
         </script>
         """,
-        height=54,
+        height=45,
     )
 
 
@@ -1514,37 +1544,31 @@ def render_topbar(result=None):
 
     if result is not None:
         flags = review_flags(result)
-        review_badge = (
-            '<span class="badge badge-warn">⚠ รอตรวจสอบบางช่อง</span>'
-            if flags
-            else '<span class="badge badge-ok">✓ ข้อมูลครบถ้วน</span>'
-        )
+        review_badge = '⚠ รอตรวจสอบบางช่อง' if flags else '✓ ข้อมูลครบถ้วน'
         raw_filename = st.session_state.get("file_name", "")
         filename = _html.escape(str(raw_filename))
-        file_badge = f'<span class="badge badge-warn">📄 {filename}</span>' if filename else ""
-        status_html = f'<span class="badge badge-ok">OCR + LLM</span>{review_badge}{file_badge}'
+        file_badge = f'📄 {filename}' if filename else ""
+        
+        status_html = f'<span class="badge badge-ok">OCR + LLM</span>'
+        status_html += f'<span class="badge badge-warn">{review_badge}</span>'
+        if file_badge:
+            status_html += f'<span class="badge badge-bad">{file_badge}</span>'
     else:
         status_html = '<span class="badge badge-ok">OCR + LLM Pipeline พร้อมใช้งาน</span>'
 
     st.markdown(CSS_STYLES, unsafe_allow_html=True)
-
     st.markdown(
-        f"""
-        <div class="app-topbar" style="border:none; margin:0; padding:0; background:transparent;">
-          <div class="topbar-grid">
-            <div class="topbar-left">
-              <span class="brand">RecAipt</span>
-              <div class="topbar-divider"></div>
-              <div class="status-row">
-                {status_html}
-              </div>
-            </div>
-          </div>
-        </div>
-        """,
+        f'<div class="app-topbar">'
+        f'<div class="topbar-grid">'
+        f'<div class="topbar-left">'
+        f'<span class="brand">RecAipt</span>'
+        f'<div class="topbar-divider"></div>'
+        f'<div class="status-row">{status_html}</div>'
+        f'</div>'
+        f'</div>'
+        f'</div>',
         unsafe_allow_html=True,
     )
-
 
 if "result_json" not in st.session_state:
     render_topbar()
@@ -1594,10 +1618,12 @@ left, right = st.columns([0.95, 1.05], gap="medium")
 with left:
     st.markdown(
         """
-        <div class="pane">
-          <div class="pane-head">
-            <div class="pane-title">ภาพใบเสร็จหลังปรับคมชัด</div>
-            <div class="pane-note">ใช้ซูมและหมุนภาพเพื่อเทียบตัวเลขกับข้อมูลด้านขวา ลดการสลับหน้าจอไปมา</div>
+        <div class="main-pane-start">
+          <div class="pane">
+            <div class="pane-head">
+              <div class="pane-title">ภาพใบเสร็จหลังปรับคมชัด</div>
+              <div class="pane-note">ใช้ซูมและหมุนภาพเพื่อเทียบตัวเลขกับข้อมูลด้านขวา ลดการสลับหน้าจอไปมา</div>
+            </div>
           </div>
         </div>
         """,
@@ -1606,11 +1632,13 @@ with left:
 
     st.markdown('<div class="zoom-control-row">', unsafe_allow_html=True)
     zoom_col, rotate_col = st.columns([1, 1])
+
     with zoom_col:
-        zoom = st.slider("ซูมภาพ", min_value=80, max_value=190, value=110, step=10)
+        zoom = st.slider("", min_value=80, max_value=190, value=110, step=10)
     with rotate_col:
-        rotation = st.selectbox("หมุนภาพ", [0, 90, 180, 270], format_func=lambda x: f"{x} องศา")
-    st.markdown('</div>', unsafe_allow_html=True)
+        rotation = st.selectbox("", [0, 90, 180, 270], format_func=lambda x: f"{x} องศา")
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
     data_uri = image_to_data_uri(st.session_state["processed_img"], rotation)
     st.markdown(
@@ -1632,30 +1660,33 @@ with left:
         )
 
 with right:
-    flags = review_flags(result_json)
     st.markdown(
         """
-        <div class="pane">
-          <div class="pane-head">
-            <div class="pane-title">ข้อมูลดิจิทัลสำหรับตรวจสอบ</div>
-            <div class="pane-note">แก้ไขได้ทุกช่อง ตารางรายการรองรับการใช้คีย์บอร์ดและการเพิ่มแถว</div>
+        <div class="main-pane-start">
+          <div class="pane">
+            <div class="pane-head">
+              <div class="pane-title">ข้อมูลดิจิทัลสำหรับตรวจสอบ</div>
+              <div class="pane-note">แก้ไขได้ทุกช่อง ตารางรายการรองรับการใช้คีย์บอร์ดและการเพิ่มแถว</div>
+            </div>
           </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
+    flags = review_flags(result_json)
     st.markdown('<div class="section-band">จุดที่ควรตรวจสอบก่อน</div>', unsafe_allow_html=True)
+
     if flags:
         st.markdown(
-            "<ul class='review-list'>"
-            + "".join(f"<li class='needs-check'>{flag}</li>" for flag in flags)
-            + "</ul>",
+            "<ul class='review-list'>" +
+            "".join([f"<li class='needs-check'>{flag}</li>" for flag in flags]) +
+            "</ul>",
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
-            "<ul class='review-list'><li class='looks-ok'>ข้อมูลหลักครบถ้วนแล้ว ตรวจทานรายการสินค้าและยอดรวมอีกครั้งก่อนส่งออก</li></ul>",
+            "<ul class='review-list'><li class='looks-ok'>ข้อมูลครบถ้วนแล้ว ตรวจทานรายการสินค้าและยอดรวมอีกครั้งก่อนส่งออก</li></ul>",
             unsafe_allow_html=True,
         )
 
