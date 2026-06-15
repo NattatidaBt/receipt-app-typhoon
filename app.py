@@ -158,7 +158,7 @@ h1, h2, h3, h4, p, label, span, div {
     position: sticky;
     top: 0;
     z-index: 20;
-    margin: 0 -22px 4px -22px !important;
+    margin: 0 -22px 12px -22px;
     padding: 12px 28px;
     background: var(--bg);
     border-bottom: 1.5px solid var(--line);
@@ -168,7 +168,7 @@ h1, h2, h3, h4, p, label, span, div {
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: 8px;
-    margin-top: 4px !important;
+    margin-top: 0px !important;
 }
 
 .pane-head {
@@ -667,12 +667,13 @@ div[data-testid="stPageLink"] > a:hover {
 .action-pad {
     position: sticky;
     bottom: 0;
-    z-index: 99;
+    z-index: 12;
     padding: 12px;
     margin-top: 12px;
-    background: rgba(251, 250, 247, 0.98);
-    border-top: 1px solid var(--line);
-    box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+    background: rgba(251, 250, 247, 0.96);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: 0 -8px 24px rgba(40, 48, 42, 0.08);
 }
 
 .kbd {
@@ -1861,7 +1862,6 @@ with right:
     if st.button("🔄 สแกนใบเสร็จใหม่", key="cloud_action_new_scan", **stretch_kwargs()):
         reset_app()
         st.rerun()
-
 
 # โหลดโมดอลไว้ล่างสุด
 components.html(FEEDBACK_MODAL_HTML, height=0)
