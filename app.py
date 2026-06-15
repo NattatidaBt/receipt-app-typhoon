@@ -9,7 +9,6 @@ from io import StringIO
 import cv2
 import streamlit as st
 import streamlit.components.v1 as components
-import requests as _req
 
 from llm_engine import call_typhoon_llm, clean_and_format_ocr
 from ocr_engine import (
@@ -1116,6 +1115,16 @@ def normalize_result(data):
         totals.get("amount_before_tax", data.get("amount_before_tax", data.get("subtotal", 0.0)))
     )
     vat_amount = safe_float(totals.get("vat_amount", data.get("vat_amount", data.get("vat", 0.0))))
+
+    # ป้องกันกรณี LLM ดึง grand_total เป็น "ยอดสุทธิ" ที่หักส่วนลด/แต้ม/คูปองออกแล้ว
+    # ซึ่งทำให้ฐาน VAT ต่ำกว่ามูลค่าสินค้าจริง: ถ้าผลรวมรายการสินค้า (items) มากกว่า
+    # grand_total ที่ได้มา ให้ใช้ผลรวมรายการสินค้าเป็น grand_total แทน
+    items_sum = round(sum(safe_float(it.get("subtotal")) for it in items), 2)
+    if items_sum > 0 and items_sum > grand_total + 0.01:
+        grand_total = items_sum
+        amount_before_tax = 0.0
+        vat_amount = 0.0
+
     if grand_total > 0 and (amount_before_tax <= 0 or vat_amount <= 0):
         amount_before_tax, vat_amount = derive_vat_values(grand_total, vat_rate, tax_included=True)
 
@@ -1239,7 +1248,7 @@ def build_receipt_csv(payload):
     return output.getvalue()
 
 
-def build_receipt_excel(payload, receipt_id=None):
+def build_receipt_excel(payload):
     try:
         import openpyxl
         from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -1355,54 +1364,13 @@ def build_receipt_excel(payload, receipt_id=None):
         vc.number_format = '#,##0.00'
         ws1.row_dimensions[r].height = 24
 
-    ws2 = wb.create_sheet("บันทึก Supabase")
-    ws2.sheet_view.showGridLines = False
-
-    ws2.merge_cells("A1:G1")
-    t2 = ws2["A1"]
-    t2.value = "RecAipt — บันทึกการส่งข้อมูลเข้า Supabase"
-    t2.font = Font(bold=True, color="FFFFFF", size=12)
-    t2.fill = PatternFill("solid", fgColor=ACCENT)
-    t2.alignment = Alignment(horizontal="left", vertical="center")
-    ws2.row_dimensions[1].height = 36
-
-    hdrs2 = ["receipt_id", "document_number", "document_date", "seller_name", "grand_total", "status", "saved_at"]
-    col_w2 = [14, 22, 16, 28, 16, 14, 22]
-    for col_i, (h, w) in enumerate(zip(hdrs2, col_w2), start=1):
-        c = ws2.cell(row=2, column=col_i, value=h)
-        header_style(c)
-        ws2.column_dimensions[get_column_letter(col_i)].width = w
-    ws2.row_dimensions[2].height = 28
-
-    if receipt_id:
-        row_data = [
-            receipt_id, payload.get("document_number", "-"), payload.get("document_date", "-"),
-            seller.get("name", "-"), safe_float(totals.get("grand_total")), "verified",
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        ]
-        aligns2 = ["center", "left", "center", "left", "right", "center", "center"]
-        for col_i, (val, aln) in enumerate(zip(row_data, aligns2), start=1):
-            c = ws2.cell(row=3, column=col_i, value=val)
-            data_style(c, bg=OK, align=aln)
-            if col_i == 5:
-                c.number_format = '#,##0.00'
-        ws2.row_dimensions[3].height = 24
-    else:
-        ws2.merge_cells("A3:G3")
-        msg = ws2["A3"]
-        msg.value = "ยังไม่ได้บันทึกลง Supabase — กด 'ส่งออกไป Supabase' ก่อนดาวน์โหลด Excel"
-        msg.font = Font(color=MUTED, italic=True, size=10)
-        msg.fill = PatternFill("solid", fgColor=WARN)
-        msg.alignment = Alignment(horizontal="center", vertical="center")
-        ws2.row_dimensions[3].height = 28
-
-    note_row = 5
-    ws2.merge_cells(f"A{note_row}:G{note_row}")
-    note = ws2[f"A{note_row}"]
+    note_row = sum_row + len(summary) + 2
+    ws1.merge_cells(f"A{note_row}:E{note_row}")
+    note = ws1[f"A{note_row}"]
     note.value = f"ไฟล์ต้นฉบับ: {payload.get('_filename', st.session_state.get('file_name', '-'))}  |  ส่งออกเมื่อ: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     note.font = Font(color=MUTED, italic=True, size=9)
     note.alignment = Alignment(horizontal="left", vertical="center")
-    ws2.row_dimensions[note_row].height = 20
+    ws1.row_dimensions[note_row].height = 20
 
     buf = BytesIO()
     wb.save(buf)
@@ -1469,218 +1437,6 @@ def reset_app():
         del st.session_state[key]
 
 
-# ─── Supabase REST API helpers ───────────────────────────────────────────────
-
-def _get_creds():
-    """ดึง SUPABASE_URL และ SUPABASE_KEY จาก st.secrets"""
-    try:
-        url = st.secrets.get("SUPABASE_URL", "").rstrip("/")
-        key = st.secrets.get("SUPABASE_KEY", "")
-        return url, key
-    except Exception:
-        return "", ""
-
-
-def _headers(key):
-    return {
-        "apikey": key,
-        "Authorization": f"Bearer {key}",
-        "Content-Type": "application/json",
-        "Prefer": "return=representation",
-    }
-
-
-def _rest_get(path, params=None):
-    url, key = _get_creds()
-    if not url or not key:
-        return None, "ยังไม่ได้ตั้งค่า SUPABASE_URL / SUPABASE_KEY"
-    try:
-        r = _req.get(f"{url}/rest/v1/{path}", headers=_headers(key), params=params, timeout=10)
-        if r.status_code == 200:
-            return r.json(), None
-        return None, f"HTTP {r.status_code}: {r.text[:200]}"
-    except Exception as e:
-        return None, str(e)
-
-
-def _rest_post(path, data):
-    """POST (insert) — คืน dict ของแถวแรกที่สร้าง"""
-    url, key = _get_creds()
-    if not url or not key:
-        raise RuntimeError("ยังไม่ได้ตั้งค่า SUPABASE_URL / SUPABASE_KEY ใน Secrets")
-    r = _req.post(
-        f"{url}/rest/v1/{path}",
-        headers=_headers(key),
-        json=data,
-        timeout=10,
-    )
-    if r.status_code not in (200, 201):
-        raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
-    rows = r.json()
-    return rows[0] if isinstance(rows, list) and rows else {}
-
-
-def _rest_upsert(path, data, on_conflict):
-    """UPSERT — ใช้ Prefer: resolution=merge-duplicates"""
-    url, key = _get_creds()
-    if not url or not key:
-        raise RuntimeError("ยังไม่ได้ตั้งค่า SUPABASE_URL / SUPABASE_KEY ใน Secrets")
-    hdrs = _headers(key)
-    hdrs["Prefer"] = f"return=representation,resolution=merge-duplicates"
-    r = _req.post(
-        f"{url}/rest/v1/{path}?on_conflict={on_conflict}",
-        headers=hdrs,
-        json=data,
-        timeout=10,
-    )
-    if r.status_code not in (200, 201):
-        raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
-    rows = r.json()
-    return rows[0] if isinstance(rows, list) and rows else {}
-
-
-def _rest_patch(path, params, data):
-    """PATCH (update) ตาม filter params"""
-    url, key = _get_creds()
-    if not url or not key:
-        raise RuntimeError("ยังไม่ได้ตั้งค่า SUPABASE_URL / SUPABASE_KEY ใน Secrets")
-    r = _req.patch(
-        f"{url}/rest/v1/{path}",
-        headers=_headers(key),
-        params=params,
-        json=data,
-        timeout=10,
-    )
-    if r.status_code not in (200, 204):
-        raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
-
-
-def _rest_delete(path, params):
-    """DELETE ตาม filter params"""
-    url, key = _get_creds()
-    if not url or not key:
-        raise RuntimeError("ยังไม่ได้ตั้งค่า SUPABASE_URL / SUPABASE_KEY ใน Secrets")
-    r = _req.delete(
-        f"{url}/rest/v1/{path}",
-        headers=_headers(key),
-        params=params,
-        timeout=10,
-    )
-    if r.status_code not in (200, 204):
-        raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
-
-
-# ─── Supabase business logic (ใช้ REST แทน supabase-py) ─────────────────────
-
-def upsert_company(company):
-    company = company or {}
-    if not company.get("name") and not company.get("tax_id") and not company.get("store_name"):
-        return None
-
-    company_payload = {
-        "name": company.get("name") or company.get("store_name") or "-",
-        "tax_id": company.get("tax_id") or None,
-        "store_name": company.get("store_name") or None,
-    }
-
-    if company_payload["tax_id"]:
-        row = _rest_upsert("companies", company_payload, on_conflict="tax_id")
-    else:
-        row = _rest_post("companies", company_payload)
-
-    return row.get("id")
-
-
-def save_to_supabase(payload):
-    """Insert ใบเสร็จใหม่พร้อม items แล้วคืน receipt_id"""
-    url, key = _get_creds()
-    if not url or not key:
-        raise RuntimeError("ไม่ได้ตั้งค่า SUPABASE_URL และ SUPABASE_KEY ใน Secrets")
-
-    seller = payload.get("seller", {}) or {}
-    buyer = payload.get("buyer", {}) or {}
-    totals = get_financial_totals(payload)
-
-    seller_id = upsert_company(seller)
-    buyer_id = upsert_company(buyer)
-
-    receipt_payload = {
-        "receipt_type": payload.get("document_type") or "ใบเสร็จรับเงิน",
-        "document_number": payload.get("document_number") or "-",
-        "document_date": payload.get("document_date") or None,
-        "document_time": payload.get("document_time") or None,
-        "seller_id": seller_id,
-        "buyer_id": buyer_id,
-        "tax_included": bool(st.session_state.get("tax_included", True)),
-        "amount_before_tax": safe_float(totals.get("amount_before_tax"), 0.0),
-        "vat_rate": safe_float(totals.get("vat_rate"), 7.0),
-        "vat_amount": safe_float(totals.get("vat_amount"), 0.0),
-        "grand_total": safe_float(totals.get("grand_total"), 0.0),
-        "payment_method": get_payment_type(payload) or None,
-        "status": "verified",
-    }
-
-    row = _rest_post("receipts", receipt_payload)
-    receipt_id = row.get("id")
-
-    for item in payload.get("items", []) or []:
-        if not item.get("item_description"):
-            continue
-        _rest_post("receipt_items", {
-            "receipt_id": receipt_id,
-            "item_description": item.get("item_description") or "-",
-            "quantity": safe_float(item.get("quantity"), 1.0),
-            "unit_price": safe_float(item.get("unit_price"), 0.0),
-            "subtotal": safe_float(item.get("subtotal"), 0.0),
-        })
-
-    return receipt_id
-
-
-def update_receipt(receipt_id, payload):
-    """Patch ใบเสร็จที่มีอยู่ แล้วแทน items ทั้งหมด"""
-    url, key = _get_creds()
-    if not url or not key:
-        raise RuntimeError("ยังไม่ได้ตั้งค่า SUPABASE_URL และ SUPABASE_KEY")
-
-    totals = get_financial_totals(payload)
-    seller = payload.get("seller", {}) or {}
-    buyer = payload.get("buyer", {}) or {}
-
-    seller_id = upsert_company(seller)
-    buyer_id = upsert_company(buyer)
-
-    update_payload = {
-        "receipt_type": payload.get("document_type"),
-        "document_number": payload.get("document_number"),
-        "document_date": payload.get("document_date"),
-        "document_time": payload.get("document_time") or None,
-        "tax_included": bool(st.session_state.get("tax_included", True)),
-        "amount_before_tax": safe_float(totals.get("amount_before_tax")),
-        "vat_rate": safe_float(totals.get("vat_rate"), 7.0),
-        "vat_amount": safe_float(totals.get("vat_amount")),
-        "grand_total": safe_float(totals.get("grand_total")),
-        "payment_method": get_payment_type(payload) or None,
-        "buyer_id": buyer_id,
-    }
-    if seller_id is not None:
-        update_payload["seller_id"] = seller_id
-
-    _rest_patch("receipts", {"id": f"eq.{receipt_id}"}, update_payload)
-
-    _rest_delete("receipt_items", {"receipt_id": f"eq.{receipt_id}"})
-    for item in payload.get("items", []) or []:
-        if not item.get("item_description") and not item.get("subtotal"):
-            continue
-        _rest_post("receipt_items", {
-            "receipt_id": receipt_id,
-            "item_description": item.get("item_description") or "-",
-            "quantity": safe_float(item.get("quantity"), 1.0),
-            "unit_price": safe_float(item.get("unit_price")),
-            "subtotal": safe_float(item.get("subtotal")),
-        })
-
-
 def run_pipeline(uploaded_file):
     file_bytes = uploaded_file.read()
     file_name = uploaded_file.name
@@ -1715,7 +1471,6 @@ def run_pipeline(uploaded_file):
     st.session_state["formatted_ocr_text"] = clean_and_format_ocr(raw_text)
     st.session_state["result_json"] = normalize_result(extracted)
     st.session_state["file_name"] = file_name
-    st.session_state["receipt_id"] = None
 
 
 def render_topbar(result=None):
@@ -1728,41 +1483,31 @@ def render_topbar(result=None):
             if flags
             else '<span class="badge badge-ok">✓ ข้อมูลครบถ้วน</span>'
         )
-        receipt_id = st.session_state.get("receipt_id")
-        saved_badge = (
-            f'<span class="badge badge-ok">💾 บันทึกแล้ว #{int(receipt_id)}</span>'
-            if receipt_id else ""
-        )
         raw_filename = st.session_state.get("file_name", "")
         filename = _html.escape(str(raw_filename))
         file_badge = f'<span class="badge badge-warn">📄 {filename}</span>' if filename else ""
-        status_html = f'<span class="badge badge-ok">OCR + LLM</span>{review_badge}{saved_badge}{file_badge}'
+        status_html = f'<span class="badge badge-ok">OCR + LLM</span>{review_badge}{file_badge}'
     else:
         status_html = '<span class="badge badge-ok">OCR + LLM Pipeline พร้อมใช้งาน</span>'
 
     st.markdown(CSS_STYLES, unsafe_allow_html=True)
 
-    top_col1, top_col2 = st.columns([8, 2])
-    with top_col1:
-        st.markdown(
-            f"""
-            <div class="app-topbar" style="border:none; margin:0; padding:0; background:transparent;">
-              <div class="topbar-grid">
-                <div class="topbar-left">
-                  <span class="brand">RecAipt</span>
-                  <div class="topbar-divider"></div>
-                  <div class="status-row">
-                    {status_html}
-                  </div>
-                </div>
+    st.markdown(
+        f"""
+        <div class="app-topbar" style="border:none; margin:0; padding:0; background:transparent;">
+          <div class="topbar-grid">
+            <div class="topbar-left">
+              <span class="brand">RecAipt</span>
+              <div class="topbar-divider"></div>
+              <div class="status-row">
+                {status_html}
               </div>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with top_col2:
-        if st.button("📚 ประวัติใบเสร็จ", key="topbar_history_redirect", **stretch_kwargs()):
-            st.switch_page("pages/history.py")
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 if "result_json" not in st.session_state:
@@ -2049,7 +1794,7 @@ with right:
     with dl_col3:
         st.download_button(
             "⬇ Excel",
-            data=build_receipt_excel(export_payload, st.session_state.get("receipt_id")),
+            data=build_receipt_excel(export_payload),
             file_name=f"{output_name}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             **stretch_kwargs(),
@@ -2065,28 +1810,11 @@ with right:
             "grand-total",
         )
 
-    st.markdown('<div class="section-band">บันทึกและดำเนินการต่อ</div>', unsafe_allow_html=True)
-    act_col1, act_col2, act_col3 = st.columns([1, 1, 1])
-    with act_col1:
-        db_label = "💾 บันทึกการแก้ไข" if st.session_state.get("receipt_id") else "💾 บันทึกลงระบบ"
-        if st.button(db_label, type="primary", **stretch_kwargs()):
-            try:
-                if st.session_state.get("receipt_id"):
-                    update_receipt(st.session_state["receipt_id"], export_payload)
-                    st.success("บันทึกการแก้ไขเรียบร้อยแล้ว")
-                else:
-                    receipt_id = save_to_supabase(export_payload)
-                    st.session_state["receipt_id"] = receipt_id
-                    st.success(f"บันทึกลงระบบแล้ว (#{receipt_id})")
-            except Exception as exc:
-                st.error(f"บันทึกไม่สำเร็จ: {exc}")
-    with act_col2:
-        if st.button("🔄 สแกนใบเสร็จใหม่", key="cloud_action_new_scan", **stretch_kwargs()):
-            reset_app()
-            st.rerun()
-    with act_col3:
-        if st.button("📚 ดูประวัติใบเสร็จ", key="cloud_action_goto_history", **stretch_kwargs()):
-            st.switch_page("pages/history.py")
+    st.markdown('<div class="section-band">ดำเนินการต่อ</div>', unsafe_allow_html=True)
+    if st.button("🔄 สแกนใบเสร็จใหม่", key="cloud_action_new_scan", **stretch_kwargs()):
+        reset_app()
+        st.rerun()
+
 
 # โหลดโมดอลไว้ล่างสุด
 components.html(FEEDBACK_MODAL_HTML, height=0)
