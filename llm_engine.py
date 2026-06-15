@@ -156,7 +156,9 @@ def call_typhoon_llm(ocr_text):
     "amount_before_tax": null,
     "vat_rate": null,
     "vat_amount": null,
-    "grand_total": null
+    "grand_total": null,
+    "discount_total": null,
+    "net_payable": null
   }},
   "payment_method": {{
     "type": null
@@ -171,7 +173,7 @@ def call_typhoon_llm(ocr_text):
 - ถ้ามีชื่อผู้ซื้อและเลขผู้เสียภาษีผู้ซื้อ ให้ document_type = ใบกำกับภาษีเต็มรูป
 - document_date ใช้รูปแบบ YYYY-MM-DD
 - document_time ใช้รูปแบบ HH:MM หรือ null
-- amount_before_tax, vat_rate, vat_amount, grand_total ต้องอยู่ใน financial_totals เท่านั้น
+- amount_before_tax, vat_rate, vat_amount, grand_total, discount_total, net_payable ต้องอยู่ใน financial_totals เท่านั้น
 - quantity ต้องเป็นตัวเลข
 - unit_price ต้องเป็นตัวเลข
 - subtotal ต้องเป็นตัวเลข
@@ -183,6 +185,9 @@ def call_typhoon_llm(ocr_text):
 - financial_totals.grand_total ต้องเป็น "มูลค่าสินค้า/บริการรวมทั้งหมดก่อนหักส่วนลด/แต้ม/คูปอง" เช่นบรรทัด "ยอดรวม" ที่เป็นผลรวมของรายการสินค้าทั้งหมด (items ทั้งหมดบวกกัน) ไม่ใช่ยอดเงินที่ลูกค้าจ่ายจริงหลังหักลด
 - ถ้าใบเสร็จมีบรรทัดหักลด เช่น "M-Stamp", "คูปอง", "ส่วนลด", "แต้มสมาชิก", "ยอดสุทธิ" ที่ตามหลังบรรทัด "ยอดรวม" และมีค่าน้อยกว่า "ยอดรวม" ให้ใช้ "ยอดรวม" เป็น grand_total และห้ามใช้ "ยอดสุทธิ" หลังหักลดเป็น grand_total
 - VAT ต้องคำนวณจากมูลค่าสินค้าก่อนหักส่วนลด/แต้ม/คูปองเสมอ ไม่ใช่จากยอดเงินสุทธิที่จ่ายจริง
+- discount_total คือผลรวมส่วนลดทั้งหมดในใบเสร็จ เช่น M-Stamp, คูปอง, แต้มสมาชิก, ส่วนลดพิเศษ — ถ้าไม่มีส่วนลดให้ใส่ 0
+- net_payable คือยอดเงินที่ลูกค้าจ่ายจริงหลังหักส่วนลดทั้งหมด = grand_total - discount_total — ถ้าไม่มีส่วนลด net_payable จะเท่ากับ grand_total
+- ถ้าใบเสร็จมีบรรทัดเช่น "ยอดสุทธิ" ที่ต่ำกว่า "ยอดรวม" ให้ใส่ค่านั้นเป็น net_payable ไม่ใช่ grand_total
 
 ตอบกลับเฉพาะ JSON เท่านั้น
 """

@@ -1115,6 +1115,8 @@ def normalize_result(data):
         totals.get("amount_before_tax", data.get("amount_before_tax", data.get("subtotal", 0.0)))
     )
     vat_amount = safe_float(totals.get("vat_amount", data.get("vat_amount", data.get("vat", 0.0))))
+    discount_total = safe_float(totals.get("discount_total", data.get("discount_total", 0.0)))
+    net_payable = safe_float(totals.get("net_payable", data.get("net_payable", 0.0)))
 
     # ป้องกันกรณี LLM ดึง grand_total เป็น "ยอดสุทธิ" ที่หักส่วนลด/แต้ม/คูปองออกแล้ว
     # ซึ่งทำให้ฐาน VAT ต่ำกว่ามูลค่าสินค้าจริง: ถ้าผลรวมรายการสินค้า (items) มากกว่า
@@ -1127,6 +1129,11 @@ def normalize_result(data):
 
     if grand_total > 0 and (amount_before_tax <= 0 or vat_amount <= 0):
         amount_before_tax, vat_amount = derive_vat_values(grand_total, vat_rate, tax_included=True)
+
+    # derive net_payable ถ้า LLM ไม่ส่งมา
+    if net_payable <= 0 and grand_total > 0:
+        net_payable = max(grand_total - discount_total, 0.0)
+        net_payable = round(net_payable, 2)
 
     return {
         "document_type": normalize_doc_type(data.get("document_type")),
@@ -1148,6 +1155,8 @@ def normalize_result(data):
             "vat_rate": vat_rate if vat_rate != 0 else None,
             "vat_amount": vat_amount if vat_amount != 0 else None,
             "grand_total": grand_total if grand_total != 0 else None,
+            "discount_total": round(discount_total, 2) if discount_total != 0 else None,
+            "net_payable": round(net_payable, 2) if net_payable != grand_total and net_payable != 0 else None,
         },
         "payment_method": {
             "type": get_payment_type(data) or None,
@@ -1199,6 +1208,8 @@ def build_export_payload(values, edited_items):
             "vat_rate": values["vat_rate"] if values["vat_rate"] != 0 else None,
             "vat_amount": values["vat_amount"] if values["vat_amount"] != 0 else None,
             "grand_total": values["grand_total"] if values["grand_total"] != 0 else None,
+            "discount_total": values.get("discount_total") if values.get("discount_total", 0) != 0 else None,
+            "net_payable": values.get("net_payable") if values.get("net_payable", 0) not in (0, values.get("grand_total")) else None,
         },
         "payment_method": {
             "type": values["payment_method"] or None,
@@ -1211,7 +1222,8 @@ def build_receipt_csv(payload):
     fieldnames = [
         "document_type", "document_number", "document_date", "document_time",
         "seller_name", "seller_tax_id", "seller_store_name", "buyer_name", "buyer_tax_id",
-        "amount_before_tax", "vat_rate", "vat_amount", "grand_total", "payment_method",
+        "amount_before_tax", "vat_rate", "vat_amount", "grand_total",
+        "discount_total", "net_payable", "payment_method",
         "item_no", "item_description", "quantity", "unit_price", "item_subtotal",
     ]
     writer = csv.DictWriter(output, fieldnames=fieldnames)
@@ -1237,6 +1249,8 @@ def build_receipt_csv(payload):
                 "vat_rate": f"{safe_float(totals.get('vat_rate')):.2f}",
                 "vat_amount": f"{safe_float(totals.get('vat_amount')):.2f}",
                 "grand_total": f"{safe_float(totals.get('grand_total')):.2f}",
+                "discount_total": f"{safe_float(totals.get('discount_total')):.2f}",
+                "net_payable": f"{safe_float(totals.get('net_payable')) or safe_float(totals.get('grand_total')):.2f}",
                 "payment_method": get_payment_type(payload),
                 "item_no": index,
                 "item_description": item.get("item_description", ""),
@@ -1349,11 +1363,16 @@ def build_receipt_excel(payload):
         ws1.row_dimensions[row].height = 22
 
     sum_row = ITEM_HEADER_ROW + len(items) + 2
+    _discount_val_xl = safe_float(totals.get("discount_total"))
+    _net_payable_xl = safe_float(totals.get("net_payable")) or safe_float(totals.get("grand_total"))
     summary = [
         ("ยอดก่อนภาษี (Subtotal)", safe_float(totals.get("amount_before_tax")), ACCENT_LIGHT),
         (f"VAT {safe_float(totals.get('vat_rate'), 7.0):.1f}%", safe_float(totals.get("vat_amount")), WARN),
-        ("ยอดสุทธิ (Grand Total)", safe_float(totals.get("grand_total")), OK),
+        ("ยอดรวมสินค้า (Grand Total)", safe_float(totals.get("grand_total")), OK),
     ]
+    if _discount_val_xl > 0:
+        summary.append(("ส่วนลดรวม (Discount)", -_discount_val_xl, "FFF3D8"))
+        summary.append(("ยอดที่จ่ายจริง (Net Payable)", _net_payable_xl, "D6EFD8"))
     for offset, (label, value, bg) in enumerate(summary):
         r = sum_row + offset
         ws1.merge_cells(f"A{r}:E{r}")
@@ -1623,6 +1642,11 @@ with right:
             unsafe_allow_html=True,
         )
 
+    _ft = get_financial_totals(result_json)
+    _grand_total_val = safe_float(_ft.get("grand_total"))
+    _discount_val = safe_float(_ft.get("discount_total"))
+    _net_payable_val = safe_float(_ft.get("net_payable")) or _grand_total_val
+    _has_discount = _discount_val > 0
     st.markdown(
         f"""
         <div class="metric-grid">
@@ -1635,8 +1659,8 @@ with right:
             <div class="metric-value">{result_json.get("document_date") or "-"}</div>
           </div>
           <div class="metric">
-            <div class="metric-label">ยอดสุทธิ</div>
-            <div class="metric-value">{safe_float(get_financial_totals(result_json).get("grand_total")):,.2f}</div>
+            <div class="metric-label">{"ยอดจ่ายจริง (หลังหักส่วนลด)" if _has_discount else "ยอดรวมสินค้า"}</div>
+            <div class="metric-value" style="{"color:#c0392b" if _has_discount else ""}">{_net_payable_val:,.2f}</div>
           </div>
         </div>
         """,
@@ -1726,8 +1750,28 @@ with right:
             )
         with total_col3:
             grand_total = st.number_input(
-                "ยอดสุทธิ",
+                "ยอดรวมสินค้า (ก่อนหักส่วนลด)",
                 value=safe_float(financial_totals.get("grand_total")),
+                min_value=0.0,
+                step=0.25,
+                format="%.2f",
+            )
+
+        # Row ส่วนลด + ยอดจ่ายจริง
+        discount_col1, discount_col2 = st.columns([1, 1])
+        with discount_col1:
+            discount_total = st.number_input(
+                "ส่วนลดรวม (M-Stamp / คูปอง / แต้ม)",
+                value=safe_float(financial_totals.get("discount_total")),
+                min_value=0.0,
+                step=0.25,
+                format="%.2f",
+            )
+        with discount_col2:
+            _derived_net = round(max(safe_float(financial_totals.get("grand_total")) - safe_float(financial_totals.get("discount_total")), 0.0), 2)
+            net_payable = st.number_input(
+                "ยอดที่จ่ายจริง (หลังหักส่วนลด)",
+                value=safe_float(financial_totals.get("net_payable")) or _derived_net or safe_float(financial_totals.get("grand_total")),
                 min_value=0.0,
                 step=0.25,
                 format="%.2f",
@@ -1761,6 +1805,8 @@ current_values = {
     "vat_rate": vat_rate,
     "vat_amount": vat_amount,
     "grand_total": grand_total,
+    "discount_total": discount_total,
+    "net_payable": net_payable,
 }
 export_payload = build_export_payload(current_values, edited_items)
 
@@ -1804,10 +1850,12 @@ with right:
     with cp_col1:
         copy_button("คัดลอก JSON", json.dumps(export_payload, ensure_ascii=False, indent=2), "json")
     with cp_col2:
+        _copy_ft = get_financial_totals(export_payload)
+        _copy_net = safe_float(_copy_ft.get("net_payable")) or safe_float(_copy_ft.get("grand_total"))
         copy_button(
-            "คัดลอกยอดสุทธิ",
-            f"{safe_float(get_financial_totals(export_payload).get('grand_total')):,.2f}",
-            "grand-total",
+            "คัดลอกยอดที่จ่ายจริง",
+            f"{_copy_net:,.2f}",
+            "net-payable",
         )
 
     st.markdown('<div class="section-band">ดำเนินการต่อ</div>', unsafe_allow_html=True)
