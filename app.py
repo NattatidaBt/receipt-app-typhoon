@@ -150,23 +150,24 @@ div[data-testid="stVerticalBlock"]:has(> div [data-testid="element-container"] .
     gap: 0 !important;
 }
 
-/* ปิดพื้นที่ว่างจาก iframe ของ Feedback Modal ที่ซ่อนไว้ท้ายหน้า */
-iframe[title="st.iframe"],
-[data-testid="stIFrame"],
-[data-testid="stCustomComponentV1"] {
-    height: 0 !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
+/* คงระยะห่างใต้ Topbar ไว้ ไม่ให้ถูกรีเซ็ตเป็น 0 */
+[data-testid="stVerticalBlock"] > [data-testid="element-container"]:has(.app-topbar) {
+    margin-bottom: 24px !important;
 }
 
-[data-testid="stVerticalBlock"]:has(> [data-testid="element-container"] [data-testid="stIFrame"]),
-[data-testid="stVerticalBlock"]:has(> [data-testid="element-container"] [data-testid="stCustomComponentV1"]) {
+/* ปิดพื้นที่ว่างจาก iframe ของ Feedback Modal ที่ซ่อนไว้ท้ายหน้า (เจาะจงเฉพาะตัวสุดท้ายของหน้า) */
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="element-container"]:last-child:has([data-testid="stIFrame"]) {
     height: 0 !important;
     min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
+    overflow: hidden !important;
+}
+
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="element-container"]:last-child:has([data-testid="stIFrame"]) [data-testid="stIFrame"] {
+    height: 0 !important;
+    min-height: 0 !important;
+    border: 0 !important;
 }
 
 h1, h2, h3, h4, p, label, span, div {
@@ -177,7 +178,7 @@ h1, h2, h3, h4, p, label, span, div {
     position: sticky;
     top: 0;
     z-index: 20;
-    margin: 0 -22px 22px -22px;
+    margin: 0 -22px 24px -22px;
     padding: 12px 28px;
     background: var(--bg);
     border-bottom: 1.5px solid var(--line);
