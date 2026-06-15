@@ -212,22 +212,27 @@ h1, h2, h3, h4, p, label, span, div {
     margin-top: 0px !important;
 }
 
-/* ล็อกความสูงกล่องแสดงภาพฝั่งซ้ายให้เกาะยืดตัวยาวอิงตามคอลัมน์ฟอร์มขวาเพื่อปิดรอยแหว่งครีม */
 .image-scroll {
-    height: calc(100vh - 210px) !important;
-    min-height: 820px !important;
+    max-height: calc(100vh - 240px) !important;
+    min-height: 450px !important;
+    height: auto !important;
+
     overflow: auto;
     padding: 14px;
+
     background:
         linear-gradient(45deg, #ece7dc 25%, transparent 25%),
         linear-gradient(-45deg, #ece7dc 25%, transparent 25%),
         linear-gradient(45deg, transparent 75%, #ece7dc 75%),
         linear-gradient(-45deg, transparent 75%, #ece7dc 75%);
+
     background-size: 18px 18px;
     background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+
     border: 1px solid var(--line);
     border-radius: 0 0 8px 8px;
-    margin-top: 0px !important;
+
+    margin-top: 0 !important;
 }
 
 .receipt-image {
