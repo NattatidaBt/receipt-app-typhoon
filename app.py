@@ -1090,94 +1090,91 @@ def derive_vat_values(grand_total, vat_rate=7.0, tax_included=True):
     return round(_total, 2), round(vat_val, 2)
 
 
-def get_financial_totals(data):
-    totals = data.get("financial_totals") if isinstance(data, dict) else {}
-    return totals if isinstance(totals, dict) else {}
+def get_summary(data):
+    summary = data.get("summary") if isinstance(data, dict) else {}
+    return summary if isinstance(summary, dict) else {}
 
 
-def get_payment_type(data):
-    payment = data.get("payment_method") if isinstance(data, dict) else None
-    if isinstance(payment, dict):
-        return payment.get("type") or ""
-    return payment or ""
+def get_document_header(data):
+    header = data.get("document_header") if isinstance(data, dict) else {}
+    return header if isinstance(header, dict) else {}
+
+
+def get_merchant_and_buyer(data):
+    mb = data.get("merchant_and_buyer") if isinstance(data, dict) else {}
+    return mb if isinstance(mb, dict) else {}
 
 
 def normalize_result(data):
     data = data or {}
-    seller = data.get("seller") if isinstance(data.get("seller"), dict) else {}
-    buyer = data.get("buyer") if isinstance(data.get("buyer"), dict) else {}
-    totals = get_financial_totals(data)
+    header = get_document_header(data)
+    mb = get_merchant_and_buyer(data)
+    summary = get_summary(data)
 
     items = []
-    for item in data.get("items", []) or []:
+    for item in data.get("line_items", data.get("items", [])) or []:
         if not isinstance(item, dict):
             continue
         qty = safe_float(item.get("quantity", item.get("qty", 1)), 1.0)
         unit_price = safe_float(item.get("unit_price", 0.0))
-        subtotal = safe_float(item.get("subtotal", item.get("amount", qty * unit_price)))
+        total_price = safe_float(
+            item.get("total_price", item.get("subtotal", item.get("amount", qty * unit_price)))
+        )
         items.append(
             {
-                "item_description": item.get("item_description", item.get("name")) or None,
+                "item_name": item.get("item_name", item.get("item_description", item.get("name"))) or None,
                 "quantity": qty if qty != 0 else None,
                 "unit_price": unit_price if unit_price != 0 else None,
-                "subtotal": subtotal if subtotal != 0 else None,
+                "total_price": total_price if total_price != 0 else None,
             }
         )
 
     if not items:
-        items = [{"item_description": None, "quantity": None, "unit_price": None, "subtotal": None}]
+        items = [{"item_name": None, "quantity": None, "unit_price": None, "total_price": None}]
 
-    grand_total = safe_float(totals.get("grand_total", data.get("grand_total", data.get("total", 0.0))))
-    vat_rate = safe_float(totals.get("vat_rate", data.get("vat_rate", 7.0)), 7.0)
-    amount_before_tax = safe_float(
-        totals.get("amount_before_tax", data.get("amount_before_tax", data.get("subtotal", 0.0)))
+    total_before_discount = safe_float(
+        summary.get("total_before_discount", data.get("grand_total", data.get("total", 0.0)))
     )
-    vat_amount = safe_float(totals.get("vat_amount", data.get("vat_amount", data.get("vat", 0.0))))
-    discount_total = safe_float(totals.get("discount_total", data.get("discount_total", 0.0)))
-    net_payable = safe_float(totals.get("net_payable", data.get("net_payable", 0.0)))
+    subtotal = safe_float(summary.get("subtotal", data.get("amount_before_tax", 0.0)))
+    discount_total = safe_float(summary.get("total_discount", data.get("discount_total", 0.0)))
+    net_amount = safe_float(summary.get("net_amount", data.get("net_payable", 0.0)))
 
-    # ป้องกันกรณี LLM ดึง grand_total เป็น "ยอดสุทธิ" ที่หักส่วนลด/แต้ม/คูปองออกแล้ว
-    # ซึ่งทำให้ฐาน VAT ต่ำกว่ามูลค่าสินค้าจริง: ถ้าผลรวมรายการสินค้า (items) มากกว่า
-    # grand_total ที่ได้มา ให้ใช้ผลรวมรายการสินค้าเป็น grand_total แทน
-    items_sum = round(sum(safe_float(it.get("subtotal")) for it in items), 2)
-    if items_sum > 0 and items_sum > grand_total + 0.01:
-        grand_total = items_sum
-        amount_before_tax = 0.0
-        vat_amount = 0.0
+    # ป้องกันกรณี LLM ดึง total_before_discount เป็น "ยอดสุทธิ" ที่หักส่วนลด/แต้ม/คูปองออกแล้ว
+    # ซึ่งทำให้ฐาน VAT ต่ำกว่ามูลค่าสินค้าจริง: ถ้าผลรวมรายการสินค้า (line_items) มากกว่า
+    # total_before_discount ที่ได้มา ให้ใช้ผลรวมรายการสินค้าเป็น total_before_discount แทน
+    items_sum = round(sum(safe_float(it.get("total_price")) for it in items), 2)
+    if items_sum > 0 and items_sum > total_before_discount + 0.01:
+        total_before_discount = items_sum
+        subtotal = 0.0
 
-    if grand_total > 0 and (amount_before_tax <= 0 or vat_amount <= 0):
-        amount_before_tax, vat_amount = derive_vat_values(grand_total, vat_rate, tax_included=True)
+    if total_before_discount > 0 and subtotal <= 0:
+        subtotal, _vat_amount = derive_vat_values(total_before_discount, 7.0, tax_included=True)
 
-    # derive net_payable ถ้า LLM ไม่ส่งมา
-    if net_payable <= 0 and grand_total > 0:
-        net_payable = max(grand_total - discount_total, 0.0)
-        net_payable = round(net_payable, 2)
+    # derive net_amount ถ้า LLM ไม่ส่งมา
+    if net_amount <= 0 and total_before_discount > 0:
+        net_amount = max(total_before_discount - discount_total, 0.0)
+        net_amount = round(net_amount, 2)
 
     return {
-        "document_type": normalize_doc_type(data.get("document_type")),
-        "document_number": data.get("document_number", data.get("receipt_no")) or None,
-        "document_date": normalize_date(data.get("document_date", data.get("date"))) or None,
-        "document_time": data.get("document_time") or None,
-        "seller": {
-            "name": seller.get("name", data.get("store_name")) or None,
-            "tax_id": seller.get("tax_id", data.get("tax_id")) or None,
-            "store_name": seller.get("store_name", data.get("store_name")) or None,
+        "document_header": {
+            "document_type": normalize_doc_type(header.get("document_type", data.get("document_type"))),
+            "document_date": normalize_date(header.get("document_date", data.get("document_date"))) or None,
+            "document_number": header.get("document_number", data.get("document_number")) or None,
         },
-        "buyer": {
-            "name": buyer.get("name") or None,
-            "tax_id": buyer.get("tax_id") or None,
+        "merchant_and_buyer": {
+            "merchant_name": mb.get("merchant_name", data.get("store_name")) or None,
+            "buyer_name": mb.get("buyer_name") or None,
+            "merchant_tax_id": mb.get("merchant_tax_id", data.get("tax_id")) or None,
+            "buyer_tax_id": mb.get("buyer_tax_id") or None,
         },
-        "items": items,
-        "financial_totals": {
-            "amount_before_tax": amount_before_tax if amount_before_tax != 0 else None,
-            "vat_rate": vat_rate if vat_rate != 0 else None,
-            "vat_amount": vat_amount if vat_amount != 0 else None,
-            "grand_total": grand_total if grand_total != 0 else None,
-            "discount_total": round(discount_total, 2) if discount_total != 0 else None,
-            "net_payable": round(net_payable, 2) if net_payable != grand_total and net_payable != 0 else None,
-        },
-        "payment_method": {
-            "type": get_payment_type(data) or None,
+        "line_items": items,
+        "summary": {
+            "subtotal": subtotal if subtotal != 0 else None,
+            "total_before_discount": total_before_discount if total_before_discount != 0 else None,
+            "total_discount": round(discount_total, 2) if discount_total != 0 else None,
+            "net_amount": round(net_amount, 2)
+            if net_amount != total_before_discount and net_amount != 0
+            else None,
         },
     }
 
@@ -1188,49 +1185,44 @@ def build_export_payload(values, edited_items):
 
     items = []
     for item in edited_items:
-        name = str(item.get("item_description") or "").strip()
+        name = str(item.get("item_name") or "").strip()
         qty = safe_float(item.get("quantity"), 0.0)
         unit_price = safe_float(item.get("unit_price"), 0.0)
-        subtotal = safe_float(item.get("subtotal"), qty * unit_price)
-        if not name and subtotal == 0:
+        total_price = safe_float(item.get("total_price"), qty * unit_price)
+        if not name and total_price == 0:
             continue
         items.append(
             {
-                "item_description": name or None,
+                "item_name": name or None,
                 "quantity": qty if qty != 0 else None,
                 "unit_price": unit_price if unit_price != 0 else None,
-                "subtotal": subtotal if subtotal != 0 else None,
+                "total_price": total_price if total_price != 0 else None,
             }
         )
 
     if not items:
-        items = [{"item_description": None, "quantity": None, "unit_price": None, "subtotal": None}]
+        items = [{"item_name": None, "quantity": None, "unit_price": None, "total_price": None}]
 
     return {
-        "document_type": normalize_doc_type(values["document_type"]) or DOC_TYPE_DEFAULT,
-        "document_number": values["document_number"] or None,
-        "document_date": normalize_date(values["document_date"]) or None,
-        "document_time": values["document_time"] or None,
-        "seller": {
-            "name": values["seller_name"] or None,
-            "tax_id": values["seller_tax_id"] or None,
-            "store_name": values["seller_store_name"] or None,
+        "document_header": {
+            "document_type": normalize_doc_type(values["document_type"]) or DOC_TYPE_DEFAULT,
+            "document_date": normalize_date(values["document_date"]) or None,
+            "document_number": values["document_number"] or None,
         },
-        "buyer": {
-            "name": values["buyer_name"] or None,
-            "tax_id": values["buyer_tax_id"] or None,
+        "merchant_and_buyer": {
+            "merchant_name": values["merchant_name"] or None,
+            "buyer_name": values["buyer_name"] or None,
+            "merchant_tax_id": values["merchant_tax_id"] or None,
+            "buyer_tax_id": values["buyer_tax_id"] or None,
         },
-        "items": items,
-        "financial_totals": {
-            "amount_before_tax": values["amount_before_tax"] if values["amount_before_tax"] != 0 else None,
-            "vat_rate": values["vat_rate"] if values["vat_rate"] != 0 else None,
-            "vat_amount": values["vat_amount"] if values["vat_amount"] != 0 else None,
-            "grand_total": values["grand_total"] if values["grand_total"] != 0 else None,
-            "discount_total": values.get("discount_total") if values.get("discount_total", 0) != 0 else None,
-            "net_payable": values.get("net_payable") if values.get("net_payable", 0) not in (0, values.get("grand_total")) else None,
-        },
-        "payment_method": {
-            "type": values["payment_method"] or None,
+        "line_items": items,
+        "summary": {
+            "subtotal": values["subtotal"] if values["subtotal"] != 0 else None,
+            "total_before_discount": values["total_before_discount"] if values["total_before_discount"] != 0 else None,
+            "total_discount": values.get("total_discount") if values.get("total_discount", 0) != 0 else None,
+            "net_amount": values.get("net_amount")
+            if values.get("net_amount", 0) not in (0, values.get("total_before_discount"))
+            else None,
         },
     }
 
@@ -1238,43 +1230,38 @@ def build_export_payload(values, edited_items):
 def build_receipt_csv(payload):
     output = StringIO()
     fieldnames = [
-        "document_type", "document_number", "document_date", "document_time",
-        "seller_name", "seller_tax_id", "seller_store_name", "buyer_name", "buyer_tax_id",
-        "amount_before_tax", "vat_rate", "vat_amount", "grand_total",
-        "discount_total", "net_payable", "payment_method",
-        "item_no", "item_description", "quantity", "unit_price", "item_subtotal",
+        "document_type", "document_number", "document_date",
+        "merchant_name", "merchant_tax_id", "buyer_name", "buyer_tax_id",
+        "subtotal", "total_before_discount",
+        "total_discount", "net_amount",
+        "item_no", "item_name", "quantity", "unit_price", "item_total_price",
     ]
     writer = csv.DictWriter(output, fieldnames=fieldnames)
     writer.writeheader()
 
-    seller = payload.get("seller", {}) or {}
-    buyer = payload.get("buyer", {}) or {}
-    totals = get_financial_totals(payload)
-    items = payload.get("items", []) or [{}]
+    header = get_document_header(payload)
+    mb = get_merchant_and_buyer(payload)
+    totals = get_summary(payload)
+    items = payload.get("line_items", []) or [{}]
     for index, item in enumerate(items, start=1):
         writer.writerow(
             {
-                "document_type": payload.get("document_type", ""),
-                "document_number": payload.get("document_number", ""),
-                "document_date": payload.get("document_date", ""),
-                "document_time": payload.get("document_time", ""),
-                "seller_name": seller.get("name", ""),
-                "seller_tax_id": seller.get("tax_id", ""),
-                "seller_store_name": seller.get("store_name", ""),
-                "buyer_name": buyer.get("name", ""),
-                "buyer_tax_id": buyer.get("tax_id", ""),
-                "amount_before_tax": f"{safe_float(totals.get('amount_before_tax')):.2f}",
-                "vat_rate": f"{safe_float(totals.get('vat_rate')):.2f}",
-                "vat_amount": f"{safe_float(totals.get('vat_amount')):.2f}",
-                "grand_total": f"{safe_float(totals.get('grand_total')):.2f}",
-                "discount_total": f"{safe_float(totals.get('discount_total')):.2f}",
-                "net_payable": f"{safe_float(totals.get('net_payable')) or safe_float(totals.get('grand_total')):.2f}",
-                "payment_method": get_payment_type(payload),
+                "document_type": header.get("document_type", ""),
+                "document_number": header.get("document_number", ""),
+                "document_date": header.get("document_date", ""),
+                "merchant_name": mb.get("merchant_name", ""),
+                "merchant_tax_id": mb.get("merchant_tax_id", ""),
+                "buyer_name": mb.get("buyer_name", ""),
+                "buyer_tax_id": mb.get("buyer_tax_id", ""),
+                "subtotal": f"{safe_float(totals.get('subtotal')):.2f}",
+                "total_before_discount": f"{safe_float(totals.get('total_before_discount')):.2f}",
+                "total_discount": f"{safe_float(totals.get('total_discount')):.2f}",
+                "net_amount": f"{safe_float(totals.get('net_amount')) or safe_float(totals.get('total_before_discount')):.2f}",
                 "item_no": index,
-                "item_description": item.get("item_description", ""),
+                "item_name": item.get("item_name", ""),
                 "quantity": f"{safe_float(item.get('quantity'), 1.0):.2f}",
                 "unit_price": f"{safe_float(item.get('unit_price')):.2f}",
-                "item_subtotal": f"{safe_float(item.get('subtotal')):.2f}",
+                "item_total_price": f"{safe_float(item.get('total_price')):.2f}",
             }
         )
     return output.getvalue()
@@ -1318,23 +1305,22 @@ def build_receipt_excel(payload):
     ws1.sheet_view.showGridLines = False
     ws1.row_dimensions[1].height = 32
 
-    seller = payload.get("seller", {}) or {}
-    buyer = payload.get("buyer", {}) or {}
-    totals = get_financial_totals(payload)
+    header = get_document_header(payload)
+    mb = get_merchant_and_buyer(payload)
+    totals = get_summary(payload)
 
     ws1.merge_cells("A1:J1")
     title_cell = ws1["A1"]
-    title_cell.value = f"RecAipt — {seller.get('name', '-')}  |  เลขที่: {payload.get('document_number', '-')}  |  วันที่: {payload.get('document_date', '-')}"
+    title_cell.value = f"RecAipt — {mb.get('merchant_name', '-')}  |  เลขที่: {header.get('document_number', '-')}  |  วันที่: {header.get('document_date', '-')}"
     title_cell.font = Font(bold=True, color="FFFFFF", size=12)
     title_cell.fill = PatternFill("solid", fgColor=ACCENT)
     title_cell.alignment = Alignment(horizontal="left", vertical="center")
     ws1.row_dimensions[1].height = 36
 
     info_rows = [
-        ("ผู้ขาย", seller.get("name", "-"), "เลขผู้เสียภาษีผู้ขาย", seller.get("tax_id", "-")),
-        ("ผู้ซื้อ", buyer.get("name", "-") or "-", "เลขผู้เสียภาษีผู้ซื้อ", buyer.get("tax_id", "-") or "-"),
-        ("ชื่อสาขา/ร้าน", seller.get("store_name", "-") or "-", "วิธีชำระเงิน", get_payment_type(payload) or "-"),
-        ("ประเภทเอกสาร", payload.get("document_type", "-"), "เวลาเอกสาร", payload.get("document_time", "-") or "-"),
+        ("ผู้ขาย", mb.get("merchant_name", "-"), "เลขผู้เสียภาษีผู้ขาย", mb.get("merchant_tax_id", "-")),
+        ("ผู้ซื้อ", mb.get("buyer_name", "-") or "-", "เลขผู้เสียภาษีผู้ซื้อ", mb.get("buyer_tax_id", "-") or "-"),
+        ("ประเภทเอกสาร", header.get("document_type", "-"), "วันที่เอกสาร", header.get("document_date", "-") or "-"),
     ]
     for r_idx, (l1, v1, l2, v2) in enumerate(info_rows, start=2):
         ws1.merge_cells(f"A{r_idx}:B{r_idx}")
@@ -1361,13 +1347,13 @@ def build_receipt_excel(payload):
             ws1.column_dimensions[get_column_letter(col_i)].width = w
     ws1.row_dimensions[ITEM_HEADER_ROW].height = 28
 
-    items = payload.get("items", []) or []
+    items = payload.get("line_items", []) or []
     for i, item in enumerate(items, start=1):
         row = ITEM_HEADER_ROW + i
         bg = WHITE if i % 2 == 1 else "F7F3EA"
         values = [
-            i, item.get("item_description", "-"), safe_float(item.get("quantity"), 1.0), "หน่วย",
-            safe_float(item.get("unit_price")), safe_float(item.get("subtotal")),
+            i, item.get("item_name", "-"), safe_float(item.get("quantity"), 1.0), "หน่วย",
+            safe_float(item.get("unit_price")), safe_float(item.get("total_price")),
             item.get("สถานะ", "-") if "สถานะ" in item else "-",
         ]
         aligns = ["center", "left", "center", "center", "right", "right", "center"]
@@ -1381,16 +1367,15 @@ def build_receipt_excel(payload):
         ws1.row_dimensions[row].height = 22
 
     sum_row = ITEM_HEADER_ROW + len(items) + 2
-    _discount_val_xl = safe_float(totals.get("discount_total"))
-    _net_payable_xl = safe_float(totals.get("net_payable")) or safe_float(totals.get("grand_total"))
+    _discount_val_xl = safe_float(totals.get("total_discount"))
+    _net_amount_xl = safe_float(totals.get("net_amount")) or safe_float(totals.get("total_before_discount"))
     summary = [
-        ("ยอดก่อนภาษี (Subtotal)", safe_float(totals.get("amount_before_tax")), ACCENT_LIGHT),
-        (f"VAT {safe_float(totals.get('vat_rate'), 7.0):.1f}%", safe_float(totals.get("vat_amount")), WARN),
-        ("ยอดรวมสินค้า (Grand Total)", safe_float(totals.get("grand_total")), OK),
+        ("ยอดก่อนภาษี (Subtotal)", safe_float(totals.get("subtotal")), ACCENT_LIGHT),
+        ("ยอดรวมสินค้า (Total Before Discount)", safe_float(totals.get("total_before_discount")), OK),
     ]
     if _discount_val_xl > 0:
         summary.append(("ส่วนลดรวม (Discount)", -_discount_val_xl, "FFF3D8"))
-        summary.append(("ยอดที่จ่ายจริง (Net Payable)", _net_payable_xl, "D6EFD8"))
+        summary.append(("ยอดที่จ่ายจริง (Net Amount)", _net_amount_xl, "D6EFD8"))
     for offset, (label, value, bg) in enumerate(summary):
         r = sum_row + offset
         ws1.merge_cells(f"A{r}:E{r}")
@@ -1416,15 +1401,15 @@ def build_receipt_excel(payload):
 
 def review_flags(data):
     flags = []
-    if not get_nested(data, ["seller", "name"]):
+    if not get_nested(data, ["merchant_and_buyer", "merchant_name"]):
         flags.append("ยังไม่พบชื่อร้านค้า ควรตรวจจากหัวใบเสร็จ")
-    if not data.get("document_date"):
+    if not get_nested(data, ["document_header", "document_date"]):
         flags.append("ยังไม่พบวันที่เอกสาร")
-    if not data.get("document_number"):
+    if not get_nested(data, ["document_header", "document_number"]):
         flags.append("ยังไม่พบเลขที่เอกสาร")
-    if safe_float(get_financial_totals(data).get("grand_total")) <= 0:
+    if safe_float(get_summary(data).get("total_before_discount")) <= 0:
         flags.append("ยอดรวมสุทธิยังเป็น 0 หรือไม่ชัดเจน")
-    if not data.get("items"):
+    if not data.get("line_items"):
         flags.append("ยังไม่พบรายการสินค้า")
     return flags
 
@@ -1544,7 +1529,7 @@ def render_topbar(result=None):
         raw_filename = st.session_state.get("file_name", "")
         filename = _html.escape(str(raw_filename))
         file_badge = f'📄 {filename}' if filename else ""
-        
+
         status_html = f'<span class="badge badge-ok">OCR + LLM</span>'
         status_html += f'<span class="badge badge-warn">{review_badge}</span>'
         if file_badge:
@@ -1565,6 +1550,7 @@ def render_topbar(result=None):
         f'</div>',
         unsafe_allow_html=True,
     )
+
 
 if "result_json" not in st.session_state:
     render_topbar()
@@ -1686,25 +1672,25 @@ with right:
             unsafe_allow_html=True,
         )
 
-    _ft = get_financial_totals(result_json)
-    _grand_total_val = safe_float(_ft.get("grand_total"))
-    _discount_val = safe_float(_ft.get("discount_total"))
-    _net_payable_val = safe_float(_ft.get("net_payable")) or _grand_total_val
+    _ft = get_summary(result_json)
+    _total_before_discount_val = safe_float(_ft.get("total_before_discount"))
+    _discount_val = safe_float(_ft.get("total_discount"))
+    _net_amount_val = safe_float(_ft.get("net_amount")) or _total_before_discount_val
     _has_discount = _discount_val > 0
     st.markdown(
         f"""
         <div class="metric-grid">
           <div class="metric">
             <div class="metric-label">ชื่อร้านค้า</div>
-            <div class="metric-value">{get_nested(result_json, ["seller", "name"], "-") or "-"}</div>
+            <div class="metric-value">{get_nested(result_json, ["merchant_and_buyer", "merchant_name"], "-") or "-"}</div>
           </div>
           <div class="metric">
             <div class="metric-label">วันที่เอกสาร</div>
-            <div class="metric-value">{result_json.get("document_date") or "-"}</div>
+            <div class="metric-value">{get_nested(result_json, ["document_header", "document_date"], "-") or "-"}</div>
           </div>
           <div class="metric">
             <div class="metric-label">{"ยอดจ่ายจริง (หลังหักส่วนลด)" if _has_discount else "ยอดรวมสินค้า"}</div>
-            <div class="metric-value" style="{"color:#c0392b" if _has_discount else ""}">{_net_payable_val:,.2f}</div>
+            <div class="metric-value" style="{"color:#c0392b" if _has_discount else ""}">{_net_amount_val:,.2f}</div>
           </div>
         </div>
         """,
@@ -1715,46 +1701,54 @@ with right:
         st.markdown('<div class="section-band">หัวเอกสาร</div>', unsafe_allow_html=True)
         doc_col1, doc_col2 = st.columns([1, 1])
         with doc_col1:
-            _current_doc_type = normalize_doc_type(result_json.get("document_type"))
+            _current_doc_type = normalize_doc_type(get_nested(result_json, ["document_header", "document_type"]))
             document_type = st.selectbox(
                 "ประเภทเอกสาร",
                 options=DOC_TYPES,
                 index=DOC_TYPES.index(_current_doc_type),
             )
-            document_number = st.text_input("เลขที่เอกสาร", value=result_json.get("document_number", ""))
+            document_number = st.text_input(
+                "เลขที่เอกสาร", value=get_nested(result_json, ["document_header", "document_number"], "")
+            )
         with doc_col2:
-            document_date = st.text_input("วันที่เอกสาร (YYYY-MM-DD)", value=result_json.get("document_date", ""))
-            document_time = st.text_input("เวลาเอกสาร (HH:MM)", value=result_json.get("document_time") or "")
-            payment_method = st.text_input("วิธีชำระเงิน", value=get_payment_type(result_json))
+            document_date = st.text_input(
+                "วันที่เอกสาร (YYYY-MM-DD)", value=get_nested(result_json, ["document_header", "document_date"], "")
+            )
 
         st.markdown('<div class="section-band">ผู้ขายและผู้ซื้อ</div>', unsafe_allow_html=True)
         seller_col, buyer_col = st.columns([1, 1])
         with seller_col:
-            seller_name = st.text_input("ชื่อร้านค้า / ผู้ขาย", value=get_nested(result_json, ["seller", "name"]))
-            seller_tax_id = st.text_input("เลขผู้เสียภาษีผู้ขาย", value=get_nested(result_json, ["seller", "tax_id"]))
-            seller_store_name = st.text_input("ชื่อสาขา / ชื่อร้านบนใบเสร็จ",
-                                              value=get_nested(result_json, ["seller", "store_name"]))
+            merchant_name = st.text_input(
+                "ชื่อร้านค้า / ผู้ขาย", value=get_nested(result_json, ["merchant_and_buyer", "merchant_name"])
+            )
+            merchant_tax_id = st.text_input(
+                "เลขผู้เสียภาษีผู้ขาย", value=get_nested(result_json, ["merchant_and_buyer", "merchant_tax_id"])
+            )
         with buyer_col:
-            buyer_name = st.text_input("ชื่อผู้ซื้อ", value=get_nested(result_json, ["buyer", "name"]))
-            buyer_tax_id = st.text_input("เลขผู้เสียภาษีผู้ซื้อ", value=get_nested(result_json, ["buyer", "tax_id"]))
+            buyer_name = st.text_input(
+                "ชื่อผู้ซื้อ", value=get_nested(result_json, ["merchant_and_buyer", "buyer_name"])
+            )
+            buyer_tax_id = st.text_input(
+                "เลขผู้เสียภาษีผู้ซื้อ", value=get_nested(result_json, ["merchant_and_buyer", "buyer_tax_id"])
+            )
 
         st.markdown('<div class="section-band">รายการสินค้าและบริการ</div>', unsafe_allow_html=True)
         edited_items = st.data_editor(
-            result_json.get("items", []),
+            result_json.get("line_items", []),
             num_rows="dynamic",
             **stretch_kwargs(),
             hide_index=True,
             column_config={
-                "item_description": st.column_config.TextColumn("รายการ", width="large"),
+                "item_name": st.column_config.TextColumn("รายการ", width="large"),
                 "quantity": st.column_config.NumberColumn("จำนวน", min_value=0.0, step=1.0, format="%.2f"),
                 "unit_price": st.column_config.NumberColumn("ราคาต่อหน่วย", min_value=0.0, step=0.25, format="%.2f"),
-                "subtotal": st.column_config.NumberColumn("รวม", min_value=0.0, step=0.25, format="%.2f"),
+                "total_price": st.column_config.NumberColumn("รวม", min_value=0.0, step=0.25, format="%.2f"),
             },
             key="items_editor",
         )
 
         st.markdown('<div class="section-band">สรุปยอด</div>', unsafe_allow_html=True)
-        financial_totals = get_financial_totals(result_json)
+        summary_totals = get_summary(result_json)
         tax_mode = st.selectbox(
             "รูปแบบ VAT",
             ["VAT รวมในราคาสินค้า", "VAT แยกบวกเพิ่ม"],
@@ -1763,39 +1757,24 @@ with right:
         )
         tax_included = tax_mode == "VAT รวมในราคาสินค้า"
         st.session_state["tax_included"] = tax_included
-        total_col1, total_col2, total_col3 = st.columns([1, 1, 1])
+        total_col1, total_col2 = st.columns([1, 1])
         with total_col1:
-            suggested_before_tax, suggested_vat = derive_vat_values(
-                financial_totals.get("grand_total"),
-                financial_totals.get("vat_rate", 7.0),
+            suggested_subtotal, _suggested_vat = derive_vat_values(
+                summary_totals.get("total_before_discount"),
+                7.0,
                 tax_included=tax_included,
             )
-            amount_before_tax = st.number_input(
+            subtotal = st.number_input(
                 "ยอดก่อนภาษี",
-                value=safe_float(financial_totals.get("amount_before_tax")) or suggested_before_tax,
+                value=safe_float(summary_totals.get("subtotal")) or suggested_subtotal,
                 min_value=0.0,
                 step=0.25,
                 format="%.2f",
             )
         with total_col2:
-            vat_rate = st.number_input(
-                "VAT (%)",
-                value=safe_float(financial_totals.get("vat_rate"), 7.0),
-                min_value=0.0,
-                step=0.5,
-                format="%.2f",
-            )
-            vat_amount = st.number_input(
-                "จำนวน VAT",
-                value=safe_float(financial_totals.get("vat_amount")) or suggested_vat,
-                min_value=0.0,
-                step=0.25,
-                format="%.2f",
-            )
-        with total_col3:
-            grand_total = st.number_input(
+            total_before_discount = st.number_input(
                 "ยอดรวมสินค้า (ก่อนหักส่วนลด)",
-                value=safe_float(financial_totals.get("grand_total")),
+                value=safe_float(summary_totals.get("total_before_discount")),
                 min_value=0.0,
                 step=0.25,
                 format="%.2f",
@@ -1804,18 +1783,22 @@ with right:
         # Row ส่วนลด + ยอดจ่ายจริง
         discount_col1, discount_col2 = st.columns([1, 1])
         with discount_col1:
-            discount_total = st.number_input(
+            total_discount = st.number_input(
                 "ส่วนลดรวม (M-Stamp / คูปอง / แต้ม)",
-                value=safe_float(financial_totals.get("discount_total")),
+                value=safe_float(summary_totals.get("total_discount")),
                 min_value=0.0,
                 step=0.25,
                 format="%.2f",
             )
         with discount_col2:
-            _derived_net = round(max(safe_float(financial_totals.get("grand_total")) - safe_float(financial_totals.get("discount_total")), 0.0), 2)
-            net_payable = st.number_input(
+            _derived_net = round(
+                max(safe_float(summary_totals.get("total_before_discount")) - safe_float(
+                    summary_totals.get("total_discount")), 0.0), 2
+            )
+            net_amount = st.number_input(
                 "ยอดที่จ่ายจริง (หลังหักส่วนลด)",
-                value=safe_float(financial_totals.get("net_payable")) or _derived_net or safe_float(financial_totals.get("grand_total")),
+                value=safe_float(summary_totals.get("net_amount")) or _derived_net or safe_float(
+                    summary_totals.get("total_before_discount")),
                 min_value=0.0,
                 step=0.25,
                 format="%.2f",
@@ -1838,19 +1821,14 @@ current_values = {
     "document_type": document_type,
     "document_number": document_number,
     "document_date": document_date,
-    "document_time": document_time,
-    "payment_method": payment_method,
-    "seller_name": seller_name,
-    "seller_tax_id": seller_tax_id,
-    "seller_store_name": seller_store_name,
+    "merchant_name": merchant_name,
+    "merchant_tax_id": merchant_tax_id,
     "buyer_name": buyer_name,
     "buyer_tax_id": buyer_tax_id,
-    "amount_before_tax": amount_before_tax,
-    "vat_rate": vat_rate,
-    "vat_amount": vat_amount,
-    "grand_total": grand_total,
-    "discount_total": discount_total,
-    "net_payable": net_payable,
+    "subtotal": subtotal,
+    "total_before_discount": total_before_discount,
+    "total_discount": total_discount,
+    "net_amount": net_amount,
 }
 export_payload = build_export_payload(current_values, edited_items)
 
@@ -1862,7 +1840,7 @@ if save_local:
 # ─── ชุดปุ่มดำเนินการและปุ่มดาวน์โหลด ───
 with right:
     st.markdown('<div class="section-band">ส่งออกข้อมูล</div>', unsafe_allow_html=True)
-    output_name = (export_payload.get("document_number") or "receipt").replace("/", "-")
+    output_name = (get_nested(export_payload, ["document_header", "document_number"]) or "receipt").replace("/", "-")
 
     dl_col1, dl_col2, dl_col3 = st.columns([1, 1, 1])
     with dl_col1:
@@ -1894,8 +1872,8 @@ with right:
     with cp_col1:
         copy_button("คัดลอก JSON", json.dumps(export_payload, ensure_ascii=False, indent=2), "json")
     with cp_col2:
-        _copy_ft = get_financial_totals(export_payload)
-        _copy_net = safe_float(_copy_ft.get("net_payable")) or safe_float(_copy_ft.get("grand_total"))
+        _copy_ft = get_summary(export_payload)
+        _copy_net = safe_float(_copy_ft.get("net_amount")) or safe_float(_copy_ft.get("total_before_discount"))
         copy_button(
             "คัดลอกยอดที่จ่ายจริง",
             f"{_copy_net:,.2f}",

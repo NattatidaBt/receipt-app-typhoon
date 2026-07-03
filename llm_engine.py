@@ -97,7 +97,6 @@ def clean_and_format_ocr(text):
         formatted.append(line)
     return "\n".join(formatted)
 
-
 def call_typhoon_llm(ocr_text):
     url = "https://api.opentyphoon.ai/v1/chat/completions"
     api_key = st.secrets["OPENTYPHOON_API_KEY"]
@@ -131,63 +130,54 @@ def call_typhoon_llm(ocr_text):
 ให้สกัดข้อมูลออกมาเป็น JSON ตาม Schema นี้
 
 {{
-  "document_type": null,
-  "document_number": null,
-  "document_date": null,
-  "document_time": null,
-  "seller": {{
-    "name": null,
-    "tax_id": null,
-    "store_name": null
+  "document_header": {{
+    "document_type": null,
+    "document_date": null,
+    "document_number": null
   }},
-  "buyer": {{
-    "name": null,
-    "tax_id": null
+  "merchant_and_buyer": {{
+    "merchant_name": null,
+    "buyer_name": null,
+    "merchant_tax_id": null,
+    "buyer_tax_id": null
   }},
-  "items": [
+  "line_items": [
     {{
-      "item_description": null,
+      "item_name": null,
       "quantity": null,
       "unit_price": null,
-      "subtotal": null
+      "total_price": null
     }}
   ],
-  "financial_totals": {{
-    "amount_before_tax": null,
-    "vat_rate": null,
-    "vat_amount": null,
-    "grand_total": null,
-    "discount_total": null,
-    "net_payable": null
-  }},
-  "payment_method": {{
-    "type": null
+  "summary": {{
+    "subtotal": null,
+    "total_before_discount": null,
+    "total_discount": null,
+    "net_amount": null
   }}
 }}
 
 กฎเพิ่มเติม
 
-- ถ้ามีข้อมูลผู้ซื้อให้ใส่ใน buyer
-- ถ้าไม่มีผู้ซื้อ ให้ buyer.name และ buyer.tax_id เป็น null
+- ถ้ามีข้อมูลผู้ซื้อให้ใส่ใน merchant_and_buyer.buyer_name / buyer_tax_id
+- ถ้าไม่มีผู้ซื้อ ให้ buyer_name และ buyer_tax_id เป็น null
 - ถ้าพบคำว่า ABB ให้ document_type = ใบกำกับภาษีอย่างย่อ
 - ถ้ามีชื่อผู้ซื้อและเลขผู้เสียภาษีผู้ซื้อ ให้ document_type = ใบกำกับภาษีเต็มรูป
 - document_date ใช้รูปแบบ YYYY-MM-DD
-- document_time ใช้รูปแบบ HH:MM หรือ null
-- amount_before_tax, vat_rate, vat_amount, grand_total, discount_total, net_payable ต้องอยู่ใน financial_totals เท่านั้น
+- subtotal, total_before_discount, total_discount, net_amount ต้องอยู่ใน summary เท่านั้น
 - quantity ต้องเป็นตัวเลข
 - unit_price ต้องเป็นตัวเลข
-- subtotal ต้องเป็นตัวเลข
-- items ต้องแยกเป็นรายแถวสินค้า/บริการเท่านั้น: 1 object ต่อ 1 รายการ ห้ามรวมสินค้าหลายรายการไว้ใน item_description เดียว
-- payment_method ต้องเป็น object ที่มี key type เท่านั้น
+- total_price ต้องเป็นตัวเลข
+- line_items ต้องแยกเป็นรายแถวสินค้า/บริการเท่านั้น: 1 object ต่อ 1 รายการ ห้ามรวมสินค้าหลายรายการไว้ใน item_name เดียว
 - ห้ามเพิ่ม field นอกเหนือจาก Schema ที่กำหนด
 - ถ้าใบเสร็จเป็นร้านค้าปลีก เช่น 7-Eleven หรือแสดง VAT รวมในราคา ห้ามบวก VAT เพิ่มซ้ำจากยอดสินค้า
-- ถ้าไม่เห็น VAT แยกชัดเจน แต่เห็นยอดสุทธิรวม ให้ประมาณ amount_before_tax = grand_total / 1.07 และ vat_amount = grand_total - amount_before_tax เฉพาะกรณีมีข้อความบ่งชี้ว่าเป็น VAT 7%
-- financial_totals.grand_total ต้องเป็น "มูลค่าสินค้า/บริการรวมทั้งหมดก่อนหักส่วนลด/แต้ม/คูปอง" เช่นบรรทัด "ยอดรวม" ที่เป็นผลรวมของรายการสินค้าทั้งหมด (items ทั้งหมดบวกกัน) ไม่ใช่ยอดเงินที่ลูกค้าจ่ายจริงหลังหักลด
-- ถ้าใบเสร็จมีบรรทัดหักลด เช่น "M-Stamp", "คูปอง", "ส่วนลด", "แต้มสมาชิก", "ยอดสุทธิ" ที่ตามหลังบรรทัด "ยอดรวม" และมีค่าน้อยกว่า "ยอดรวม" ให้ใช้ "ยอดรวม" เป็น grand_total และห้ามใช้ "ยอดสุทธิ" หลังหักลดเป็น grand_total
-- VAT ต้องคำนวณจากมูลค่าสินค้าก่อนหักส่วนลด/แต้ม/คูปองเสมอ ไม่ใช่จากยอดเงินสุทธิที่จ่ายจริง
-- discount_total คือผลรวมส่วนลดทั้งหมดในใบเสร็จ เช่น M-Stamp, คูปอง, แต้มสมาชิก, ส่วนลดพิเศษ — ถ้าไม่มีส่วนลดให้ใส่ 0
-- net_payable คือยอดเงินที่ลูกค้าจ่ายจริงหลังหักส่วนลดทั้งหมด = grand_total - discount_total — ถ้าไม่มีส่วนลด net_payable จะเท่ากับ grand_total
-- ถ้าใบเสร็จมีบรรทัดเช่น "ยอดสุทธิ" ที่ต่ำกว่า "ยอดรวม" ให้ใส่ค่านั้นเป็น net_payable ไม่ใช่ grand_total
+- ถ้าไม่เห็น VAT แยกชัดเจน แต่เห็นยอดสุทธิรวม ให้ประมาณ subtotal = total_before_discount / 1.07 เฉพาะกรณีมีข้อความบ่งชี้ว่าเป็น VAT 7%
+- summary.total_before_discount ต้องเป็น "มูลค่าสินค้า/บริการรวมทั้งหมดก่อนหักส่วนลด/แต้ม/คูปอง" เช่นบรรทัด "ยอดรวม" ที่เป็นผลรวมของรายการสินค้าทั้งหมด (line_items ทั้งหมดบวกกัน) ไม่ใช่ยอดเงินที่ลูกค้าจ่ายจริงหลังหักลด
+- ถ้าใบเสร็จมีบรรทัดหักลด เช่น "M-Stamp", "คูปอง", "ส่วนลด", "แต้มสมาชิก", "ยอดสุทธิ" ที่ตามหลังบรรทัด "ยอดรวม" และมีค่าน้อยกว่า "ยอดรวม" ให้ใช้ "ยอดรวม" เป็น total_before_discount และห้ามใช้ "ยอดสุทธิ" หลังหักลดเป็น total_before_discount
+- VAT (subtotal) ต้องคำนวณจากมูลค่าสินค้าก่อนหักส่วนลด/แต้ม/คูปองเสมอ ไม่ใช่จากยอดเงินสุทธิที่จ่ายจริง
+- total_discount คือผลรวมส่วนลดทั้งหมดในใบเสร็จ เช่น M-Stamp, คูปอง, แต้มสมาชิก, ส่วนลดพิเศษ — ถ้าไม่มีส่วนลดให้ใส่ 0
+- net_amount คือยอดเงินที่ลูกค้าจ่ายจริงหลังหักส่วนลดทั้งหมด = total_before_discount - total_discount — ถ้าไม่มีส่วนลด net_amount จะเท่ากับ total_before_discount
+- ถ้าใบเสร็จมีบรรทัดเช่น "ยอดสุทธิ" ที่ต่ำกว่า "ยอดรวม" ให้ใส่ค่านั้นเป็น net_amount ไม่ใช่ total_before_discount
 
 ตอบกลับเฉพาะ JSON เท่านั้น
 """
