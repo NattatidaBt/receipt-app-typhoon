@@ -260,6 +260,7 @@ h1, h2, h3, h4, p, label, span, div {
     border: 1px solid var(--line);
     border-radius: 0 0 8px 8px;
     margin-top: 0px !important;
+    margin-bottom: 20px !important;
 }
 
 .receipt-image {
@@ -269,6 +270,11 @@ h1, h2, h3, h4, p, label, span, div {
     border: 1px solid #bfe0ea;
     background: #fff;
     box-shadow: 0 10px 28px rgba(31, 41, 55, 0.12);
+}
+
+.ocr-expander-spacer {
+    clear: both;
+    height: 8px;
 }
 
 .topbar-grid {
@@ -1647,6 +1653,8 @@ with left:
         """,
         unsafe_allow_html=True,
     )
+
+    st.markdown('<div class="ocr-expander-spacer"></div>', unsafe_allow_html=True)
 
     with st.expander("ข้อความ OCR ดิบ"):
         st.caption("แสดงแบบจัดบรรทัดเพื่ออ่านง่ายขึ้น โดยยังคงข้อความ OCR ต้นทางไว้สำหรับตรวจสอบ")
