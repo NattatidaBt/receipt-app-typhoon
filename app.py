@@ -78,14 +78,14 @@ def normalize_doc_type(value):
 CSS_STYLES = """
 <style>
 :root {
-    --bg: #F4F1EA;
-    --panel: #FFFDF8;
-    --panel-2: #EEF5F3;
-    --ink: #1F2A2A;
-    --muted: #66736F;
-    --line: #D8D1C3;
-    --accent: #2F6F73;
-    --accent-2: #285E62;
+    --bg: #eaf6fb;
+    --panel: #ffffff;
+    --panel-2: #eaf6fb;
+    --ink: #1f2937;
+    --muted: #5b6b73;
+    --line: #d7e6ea;
+    --accent: #00A8CC;
+    --accent-2: #008fae;
     --ok-bg: #e8f2e7;
     --ok-line: #9abe98;
     --ok-ink: #2c6330;
@@ -249,25 +249,24 @@ h1, h2, h3, h4, p, label, span, div {
     min-height: 520px !important;
     max-height: 780px !important;
     overflow: auto;
-    padding: 14px 14px 28px 14px;
+    padding: 14px;
     background:
-        linear-gradient(45deg, #E7E1D4 25%, transparent 25%),
-        linear-gradient(-45deg, #E7E1D4 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #E7E1D4 75%),
-        linear-gradient(-45deg, transparent 75%, #E7E1D4 75%);
+        linear-gradient(45deg, #dbeff5 25%, transparent 25%),
+        linear-gradient(-45deg, #dbeff5 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #dbeff5 75%),
+        linear-gradient(-45deg, transparent 75%, #dbeff5 75%);
     background-size: 18px 18px;
     background-position: 0 0, 0 9px, 9px -9px, -9px 0;
     border: 1px solid var(--line);
     border-radius: 0 0 8px 8px;
     margin-top: 0px !important;
-    margin-bottom: 16px !important;
 }
 
 .receipt-image {
     display: block;
     height: auto;
     margin: 0 auto;
-    border: 1px solid var(--line);
+    border: 1px solid #bfe0ea;
     background: #fff;
     box-shadow: 0 10px 28px rgba(31, 41, 55, 0.12);
 }
@@ -428,10 +427,10 @@ h1, h2, h3, h4, p, label, span, div {
 [data-testid="stFileUploaderDropzone"] button,
 [data-testid="stFileUploader"] button,
 [data-testid="stFileUploader"] section button {
-    background-color: var(--panel) !important;
-    background: var(--panel) !important;
-    color: var(--ink) !important;
-    border: 1px solid var(--line) !important;
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #1f2937 !important;
+    border: 1px solid #a9d4e0 !important;
     border-radius: 8px !important;
     box-shadow: none !important;
     min-height: 40px !important;
@@ -445,8 +444,8 @@ h1, h2, h3, h4, p, label, span, div {
 [data-testid="stFileUploaderDropzone"] button:hover,
 [data-testid="stFileUploader"] button:hover,
 [data-testid="stFileUploader"] section button:hover {
-    background-color: var(--panel-2) !important;
-    background: var(--panel-2) !important;
+    background-color: #eaf8fb !important;
+    background: #eaf8fb !important;
     border-color: var(--accent) !important;
     color: var(--accent-2) !important;
 }
@@ -466,9 +465,9 @@ h1, h2, h3, h4, p, label, span, div {
 [data-testid="stFileUploaderDeleteBtn"] button,
 [data-testid="stFileUploaderDeleteBtn"],
 [data-testid="stFileUploaderFile"] button {
-    background: var(--panel) !important;
+    background: #ffffff !important;
     color: var(--ink) !important;
-    border: 1px solid var(--line) !important;
+    border: 1px solid #a9d4e0 !important;
     border-radius: 8px !important;
 }
 /* ─────────────────────────────────────────────────── */
@@ -476,9 +475,9 @@ h1, h2, h3, h4, p, label, span, div {
 .soft-callout {
     padding: 12px 14px;
     border-radius: 8px;
-    background: var(--panel-2);
-    border: 1px solid var(--line);
-    color: var(--accent-2);
+    background: #eaf8fb;
+    border: 1px solid #b9e2ec;
+    color: #0f5c70;
     font-size: 0.97rem;
     line-height: 1.55;
     margin: 10px 0 14px;
@@ -506,7 +505,7 @@ h1, h2, h3, h4, p, label, span, div {
     padding: 12px;
     border: 1px solid var(--line);
     border-radius: 8px;
-    background: var(--panel);
+    background: #ffffff;
 }
 
 .metric-label {
@@ -559,8 +558,8 @@ h1, h2, h3, h4, p, label, span, div {
     font-size: 1.02rem !important;
     line-height: 1.55 !important;
     color: var(--ink) !important;
-    background: var(--panel) !important;
-    border-color: var(--line) !important;
+    background: #ffffff !important;
+    border-color: #bfe0ea !important;
     border-radius: 8px !important;
 }
 
@@ -583,7 +582,7 @@ h1, h2, h3, h4, p, label, span, div {
 .stTextArea textarea:focus,
 .stNumberInput input:focus {
     border-color: var(--accent) !important;
-    box-shadow: 0 0 0 3px rgba(47, 111, 115, 0.18) !important;
+    box-shadow: 0 0 0 3px rgba(0, 168, 204, 0.18) !important;
 }
 
 div.stButton > button,
@@ -593,8 +592,8 @@ div.stFormSubmitButton > button {
     border-radius: 8px !important;
     font-size: 1rem !important;
     font-weight: 720 !important;
-    border: 1px solid var(--line) !important;
-    background: var(--panel) !important;
+    border: 1px solid #a9d4e0 !important;
+    background: #ffffff !important;
     color: var(--ink) !important;
 }
 
@@ -603,7 +602,7 @@ div.stDownloadButton > button:hover,
 div.stFormSubmitButton > button:hover {
     border-color: var(--accent) !important;
     color: var(--accent-2) !important;
-    background: var(--panel-2) !important;
+    background: #eaf8fb !important;
 }
 
 div.stButton > button[kind="primary"],
@@ -629,8 +628,8 @@ div[data-testid="stPageLink"] > a {
     border-radius: 8px !important;
     font-size: 1rem !important;
     font-weight: 720 !important;
-    border: 1px solid var(--line) !important;
-    background: var(--panel) !important;
+    border: 1px solid #a9d4e0 !important;
+    background: #ffffff !important;
     color: var(--ink) !important;
     text-decoration: none !important;
     padding: 0 16px !important;
@@ -643,22 +642,22 @@ div.stPageLink > a:hover,
 div[data-testid="stPageLink"] > a:hover {
     border-color: var(--accent) !important;
     color: var(--accent-2) !important;
-    background: var(--panel-2) !important;
+    background: #eaf8fb !important;
     text-decoration: none !important;
 }
 
 .stNumberInput button,
 .stNumberInput [data-testid="stNumberInputStepDown"],
 .stNumberInput [data-testid="stNumberInputStepUp"] {
-    background: var(--panel) !important;
+    background: #ffffff !important;
     color: var(--ink) !important;
-    border: 1px solid var(--line) !important;
+    border: 1px solid #a9d4e0 !important;
 }
 
 .stNumberInput button:hover,
 .stNumberInput [data-testid="stNumberInputStepDown"]:hover,
 .stNumberInput [data-testid="stNumberInputStepUp"]:hover {
-    background: var(--panel-2) !important;
+    background: #eaf8fb !important;
     color: var(--accent-2) !important;
     border-color: var(--accent) !important;
 }
@@ -674,7 +673,7 @@ div[data-testid="stPageLink"] > a:hover {
     border: 1px solid var(--line);
     border-radius: 8px;
     overflow: hidden;
-    background: var(--panel) !important;
+    background: #ffffff !important;
     color: var(--ink) !important;
 }
 
@@ -688,9 +687,9 @@ div[data-testid="stPageLink"] > a:hover {
 }
 
 [data-testid="stDataFrame"] button {
-    background: var(--panel) !important;
+    background: #ffffff !important;
     color: var(--ink) !important;
-    border-color: var(--line) !important;
+    border-color: #a9d4e0 !important;
 }
 
 [data-testid="stAlert"] *,
@@ -710,9 +709,9 @@ div[data-testid="stPageLink"] > a:hover {
 .kbd {
     display: inline-block;
     padding: 1px 7px;
-    border: 1px solid var(--line);
+    border: 1px solid #a9d4e0;
     border-radius: 5px;
-    background: var(--panel);
+    background: #ffffff;
     color: var(--ink);
     font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
     font-size: 0.88rem;
@@ -769,7 +768,7 @@ div[data-testid="stPageLink"] > a:hover {
     padding: 6px 14px;
     border-radius: 999px;
     border: 1px solid var(--line);
-    background: var(--panel);
+    background: #ffffff;
     color: var(--ink);
     font-size: 0.94rem;
     cursor: pointer;
@@ -779,7 +778,7 @@ div[data-testid="stPageLink"] > a:hover {
 
 .fb-chip:hover {
     border-color: var(--accent);
-    background: var(--panel-2);
+    background: #eaf8fb;
     color: var(--accent-2);
 }
 
@@ -793,9 +792,9 @@ div[data-testid="stPageLink"] > a:hover {
     width: 100%;
     min-height: 84px;
     padding: 10px 12px;
-    border: 1px solid var(--line);
+    border: 1px solid #bfe0ea;
     border-radius: 8px;
-    background: var(--panel);
+    background: #ffffff;
     color: var(--ink);
     font-size: 1rem;
     line-height: 1.55;
@@ -808,7 +807,7 @@ div[data-testid="stPageLink"] > a:hover {
 .fb-textarea:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(47, 111, 115, 0.18) !important;
+    box-shadow: 0 0 0 3px rgba(0, 168, 204, 0.18) !important;
 }
 
 .fb-btn-row {
@@ -821,8 +820,8 @@ div[data-testid="stPageLink"] > a:hover {
     min-height: 40px;
     padding: 6px 20px;
     border-radius: 8px;
-    border: 1px solid var(--line);
-    background: var(--panel);
+    border: 1px solid #a9d4e0;
+    background: #ffffff;
     color: var(--ink);
     font-size: 0.98rem;
     font-weight: 720;
@@ -832,7 +831,7 @@ div[data-testid="stPageLink"] > a:hover {
 
 .fb-btn:hover {
     border-color: var(--accent);
-    background: var(--panel-2);
+    background: #eaf8fb;
 }
 
 .fb-btn.primary {
@@ -861,10 +860,6 @@ div[data-testid="stPageLink"] > a:hover {
 
 .fb-star.lit {
     color: #e8a820;
-}
-
-.ocr-expander-spacer {
-    height: 14px;
 }
 
 @media (max-width: 980px) {
@@ -1028,7 +1023,7 @@ FEEDBACK_MODAL_HTML = """
     t.textContent = msg;
     t.style.cssText = `
       position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
-      background:#2F6F73;color:#fff;padding:10px 22px;border-radius:999px;
+      background:#00A8CC;color:#fff;padding:10px 22px;border-radius:999px;
       font-size:0.98rem;font-weight:650;z-index:99999;
       box-shadow:0 8px 24px rgba(15,40,48,0.22);
       animation:fadeUp 0.25s ease;
@@ -1466,9 +1461,9 @@ def copy_button(label, text, key):
             width: 100%;
             height: 44px;
             border-radius: 8px;
-            border: 1px solid #D8D1C3;
-            background: #FFFDF8;
-            color: #1F2A2A;
+            border: 1px solid #a9d4e0;
+            background: #ffffff;
+            color: #1f2937;
             font-size: 16px;
             font-weight: 720;
             cursor: pointer;
@@ -1479,9 +1474,9 @@ def copy_button(label, text, key):
             transition: background 0.15s, border-color 0.15s, color 0.15s;
         }}
         #copy-{key}:hover {{
-            border-color: #2F6F73;
-            color: #285E62;
-            background: #EEF5F3;
+            border-color: #00A8CC;
+            color: #008fae;
+            background: #eaf8fb;
         }}
         </style>
         <button id="copy-{key}">{label}</button>
@@ -1652,8 +1647,6 @@ with left:
         """,
         unsafe_allow_html=True,
     )
-
-    st.markdown('<div class="ocr-expander-spacer"></div>', unsafe_allow_html=True)
 
     with st.expander("ข้อความ OCR ดิบ"):
         st.caption("แสดงแบบจัดบรรทัดเพื่ออ่านง่ายขึ้น โดยยังคงข้อความ OCR ต้นทางไว้สำหรับตรวจสอบ")
