@@ -1,6 +1,5 @@
 import base64
 import csv
-import inspect
 import json
 import math
 import re
@@ -730,148 +729,8 @@ div[data-testid="stPageLink"] > a:hover {
     line-height: 1.55;
 }
 
-.fb-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    background: rgba(41, 37, 36, 0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.fb-modal {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 28px 32px 24px;
-    width: min(520px, 92vw);
-    box-shadow: 0 24px 64px rgba(41, 37, 36, 0.25);
-}
-
-.fb-title {
-    color: var(--ink);
-    font-size: 1.18rem;
-    font-weight: 760;
-    line-height: 1.35;
-    margin-bottom: 6px;
-}
-
-.fb-sub {
-    color: var(--muted);
-    font-size: 0.96rem;
-    line-height: 1.55;
-    margin-bottom: 18px;
-}
-
-.fb-chip-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
-.fb-chip {
-    padding: 6px 14px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: var(--panel-2);
-    color: var(--ink);
-    font-size: 0.94rem;
-    cursor: pointer;
-    user-select: none;
-    transition: background 0.15s, border-color 0.15s;
-}
-
-.fb-chip:hover {
-    border-color: var(--accent);
-    background: #FFF7ED;
-    color: var(--accent);
-}
-
-.fb-chip.selected {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-}
-
-.fb-textarea {
-    width: 100%;
-    min-height: 84px;
-    padding: 10px 12px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #FFFFFF;
-    color: var(--ink);
-    font-size: 1rem;
-    line-height: 1.55;
-    resize: vertical;
-    box-sizing: border-box;
-    font-family: inherit;
-    margin-bottom: 16px;
-}
-
-.fb-textarea:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.25) !important;
-}
-
-.fb-btn-row {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-}
-
-.fb-btn {
-    min-height: 40px;
-    padding: 6px 20px;
-    border-radius: 8px;
-    border: 1px solid var(--line);
-    background: #FFFFFF;
-    color: var(--ink);
-    font-size: 0.98rem;
-    font-weight: 720;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-}
-
-.fb-btn:hover {
-    border-color: var(--accent);
-    background: #FFF7ED;
-}
-
-.fb-btn.primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-}
-
-.fb-btn.primary:hover {
-    background: var(--accent-2);
-}
-
-.fb-star-row {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 16px;
-}
-
-.fb-star {
-    font-size: 1.6rem;
-    cursor: pointer;
-    color: var(--line);
-    transition: color 0.12s;
-    user-select: none;
-}
-
-.fb-star.lit {
-    color: var(--accent-2);
-}
-
 @media (max-width: 980px) {
     .topbar-grid,
-    .split-shell,
     .metric-grid {
         grid-template-columns: 1fr;
     }
@@ -914,139 +773,6 @@ div[data-testid="stPageLink"] > a:hover {
 
 def stretch_kwargs():
     return {"width": "stretch"}
-
-
-# ─── Feedback modal ─────────────────────────────────────────────────────────
-FEEDBACK_MODAL_HTML = """
-<div id="fb-overlay" class="fb-overlay" style="display:none;">
-  <div class="fb-modal">
-    <div class="fb-title" id="fb-modal-title">ช่วยให้คะแนนประสบการณ์ใช้งาน</div>
-    <div class="fb-sub" id="fb-modal-sub">ความคิดเห็นของคุณช่วยให้ RecAipt ดีขึ้นได้จริงๆ ครับ</div>
-
-    <div class="fb-star-row" id="fb-stars">
-      <span class="fb-star" data-v="1">★</span>
-      <span class="fb-star" data-v="2">★</span>
-      <span class="fb-star" data-v="3">★</span>
-      <span class="fb-star" data-v="4">★</span>
-      <span class="fb-star" data-v="5">★</span>
-    </div>
-
-    <div class="fb-chip-row" id="fb-chips"></div>
-
-    <textarea class="fb-textarea" id="fb-text" placeholder="แนะนำเพิ่มเติม หรืออธิบายปัญหาที่พบ (ไม่บังคับ)"></textarea>
-
-    <div class="fb-btn-row">
-      <button class="fb-btn" onclick="closeFeedback()">ข้ามไปก่อน</button>
-      <button class="fb-btn primary" onclick="submitFeedback()">ส่งความคิดเห็น</button>
-    </div>
-  </div>
-</div>
-
-<script>
-(function() {
-  const CHIP_SETS = {
-    new_receipt: [
-      "ใช้ง่ายดี", "OCR ถูกต้อง", "OCR ผิดพลาด",
-      "ช้าเกินไป", "ข้อมูลหายบางส่วน", "อยากได้ฟีเจอร์เพิ่ม"
-    ]
-  };
-
-  let _starVal = 0;
-  let _trigger = "new_receipt";
-  const _selectedChips = new Set();
-
-  window.openFeedback = function(trigger) {
-    _trigger = trigger || "new_receipt";
-    _starVal = 0;
-    _selectedChips.clear();
-
-    document.querySelectorAll(".fb-star").forEach(s => s.classList.remove("lit"));
-
-    const chipRow = document.getElementById("fb-chips");
-    chipRow.innerHTML = "";
-    (CHIP_SETS[_trigger] || CHIP_SETS.new_receipt).forEach(label => {
-      const chip = document.createElement("span");
-      chip.className = "fb-chip";
-      chip.textContent = label;
-      chip.onclick = () => {
-        if (_selectedChips.has(label)) {
-          _selectedChips.delete(label);
-          chip.classList.remove("selected");
-        } else {
-          _selectedChips.add(label);
-          chip.classList.add("selected");
-        }
-      };
-      chipRow.appendChild(chip);
-    });
-
-    document.getElementById("fb-text").value = "";
-
-    document.getElementById("fb-modal-title").textContent = "เริ่มใบใหม่แล้ว — ช่วยให้คะแนนด้วยนะ";
-    document.getElementById("fb-modal-sub").textContent = "ความคิดเห็นของคุณช่วยให้ RecAipt ดีขึ้นได้จริงๆ ครับ";
-
-    document.getElementById("fb-overlay").style.display = "flex";
-  };
-
-  window.closeFeedback = function() {
-    document.getElementById("fb-overlay").style.display = "none";
-  };
-
-  window.submitFeedback = function() {
-    const payload = {
-      trigger: _trigger,
-      rating: _starVal,
-      chips: Array.from(_selectedChips),
-      comment: document.getElementById("fb-text").value.trim(),
-      ts: new Date().toISOString()
-    };
-    try {
-      const prev = JSON.parse(localStorage.getItem("recaipt_feedback") || "[]");
-      prev.push(payload);
-      localStorage.setItem("recaipt_feedback", JSON.stringify(prev));
-    } catch(e) {}
-    closeFeedback();
-    showToast("ขอบคุณสำหรับความคิดเห็น! 🙏");
-  };
-
-  document.addEventListener("DOMContentLoaded", function() {
-    hookStars();
-  });
-  hookStars();
-
-  function hookStars() {
-    document.querySelectorAll(".fb-star").forEach(star => {
-      star.addEventListener("click", function() {
-        _starVal = parseInt(this.dataset.v);
-        document.querySelectorAll(".fb-star").forEach(s => {
-          s.classList.toggle("lit", parseInt(s.dataset.v) <= _starVal);
-        });
-      });
-    });
-  }
-
-  window.showToast = function(msg) {
-    const t = document.createElement("div");
-    t.textContent = msg;
-    t.style.cssText = `
-      position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
-      background:#C2410C;color:#fff;padding:10px 22px;border-radius:999px;
-      font-size:0.98rem;font-weight:650;z-index:99999;
-      box-shadow:0 8px 24px rgba(41,37,36,0.35);
-      animation:fadeUp 0.25s ease;
-    `;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2800);
-  };
-})();
-</script>
-<style>
-@keyframes fadeUp {
-  from { opacity:0; transform:translateX(-50%) translateY(12px); }
-  to   { opacity:1; transform:translateX(-50%) translateY(0); }
-}
-</style>
-"""
 
 
 def safe_float(value, default=0.0):
@@ -1292,7 +1018,6 @@ def build_receipt_excel(payload):
 
     ACCENT = "C2410C"
     ACCENT_LIGHT = "FDF1E6"
-    WARN = "FEF3E2"
     OK = "EAF4EA"
     WHITE = "FFFFFF"
     INK = "292524"
@@ -1583,7 +1308,7 @@ if "result_json" not in st.session_state:
           <div class="upload-wrap">
             <div class="upload-title">อัปโหลดใบเสร็จเพื่อเริ่มตรวจสอบ</div>
             <div class="upload-subtitle">
-              รองรับไฟล์ JPG, PNG และ PDF หน้าแรก ระบบจะปรับภาพด้วย Method 4 แล้วส่งเข้า Typhoon OCR และ Typhoon LLM
+              รองรับไฟล์ JPG, PNG และ PDF หน้าแรก ระบบจะปรับภาพด้วย CLAHE (เพิ่มความคมชัด) แล้วส่งเข้า Typhoon OCR และ Typhoon LLM
             </div>
           </div>
         </div>
@@ -1914,6 +1639,3 @@ with right:
     if st.button("🔄 สแกนใบเสร็จใหม่", key="cloud_action_new_scan", **stretch_kwargs()):
         reset_app()
         st.rerun()
-
-# โหลดโมดอลไว้ล่างสุด
-components.html(FEEDBACK_MODAL_HTML, height=0)

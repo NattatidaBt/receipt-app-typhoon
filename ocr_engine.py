@@ -12,13 +12,10 @@ OCR_MAX_TOKENS = 8192
 OCR_JPEG_QUALITY = 75
 OCR_MAX_RETRIES = 5
 
-# prompt เดิมที่ใช้ตอนสร้างชุดข้อมูล (Preprocess_clahe.py) — ยังไม่มีข้อมูลว่า prompt ยาว 16 ข้อ
-# ที่เคยส่งมาให้ดูจะแม่นกว่าหรือแย่กว่านี้ จึงยึดตัวที่วัดผลแล้วไว้ก่อน
 OCR_PROMPT = (
     "กรุณาดึงข้อความทั้งหมดที่ปรากฏในภาพออกมาให้ครบถ้วนและแม่นยำที่สุด "
     "ห้ามข้ามหรือตัดข้อความใดๆ ทิ้งเด็ดขาด พิมพ์ออกมาตามที่เห็นในภาพ"
 )
-
 
 # =========================================================
 # 1) โหลดไฟล์ (รูปภาพ/PDF) จาก bytes ที่ Streamlit ส่งมา
@@ -190,13 +187,23 @@ def format_ocr_text(text: str) -> str:
 
 
 # =========================================================
-# 🚀 ฟังก์ชันหลักที่หน้าเว็บเรียกใช้: รูป/PDF ที่อัปโหลด -> ข้อความพร้อมส่งเข้า extractor
+# 🛠️ Utility function: รวม pipeline OCR ทั้งหมดไว้ในฟังก์ชันเดียว
+#    ⚠️ หมายเหตุ: app.py (Streamlit) "ไม่ได้" เรียกฟังก์ชันนี้โดยตรง เพราะ UI ฝั่งซ้าย
+#    ต้องใช้ค่าตัวกลางระหว่างทาง (processed_img, raw_text) ไปแสดงผล/เก็บใน
+#    st.session_state ด้วย — app.py จึงเรียกฟังก์ชันย่อยแต่ละขั้น (load_image_or_pdf ->
+#    deskew_image -> process_clahe -> run_typhoon_ocr -> clean_ocr_text -> format_ocr_text)
+#    เองตามลำดับเดียวกันนี้แทน
+#    ฟังก์ชันนี้มีไว้เป็น convenience wrapper สำหรับใช้งานนอก Web UI เช่น CLI script,
+#    Notebook, หรือ Batch processing ที่ต้องการแค่ text ผลลัพธ์สุดท้ายอย่างเดียว
 # =========================================================
 def run_ocr_pipeline(file_bytes: bytes, file_name: str) -> str:
     """
-    รับไฟล์ที่อัปโหลด (bytes + ชื่อไฟล์) -> คืนข้อความ OCR ที่ผ่าน deskew + CLAHE + OCR +
-    clean_ocr_text + format_ocr_text เรียบร้อยแล้ว พร้อมส่งต่อให้
-    receipt_extractor.call_typhoon_llm() ทันที (ห้ามข้ามหรือสลับลำดับขั้นตอนใดๆ)
+    Utility/CLI helper: รับไฟล์ที่อัปโหลด (bytes + ชื่อไฟล์) -> คืนข้อความ OCR ที่ผ่าน
+    deskew + CLAHE + OCR + clean_ocr_text + format_ocr_text เรียบร้อยแล้ว พร้อมส่งต่อให้
+    llm_engine.call_typhoon_llm() ทันที (ห้ามข้ามหรือสลับลำดับขั้นตอนใดๆ)
+
+    ใช้สำหรับเรียกนอก Streamlit เช่น CLI/Notebook/Batch script เท่านั้น
+    Web UI จริง (app.py) เรียกขั้นตอนย่อยเองแยกกันเพื่อเก็บค่าตัวกลางไว้แสดงผล
     """
     img = load_image_or_pdf(file_bytes, file_name)
     if img is None:

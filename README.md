@@ -16,9 +16,12 @@
 ```text
 receipt_app/
 ├── .streamlit/
-│   └── secrets.toml        # ที่สำหรับเก็บ API Key ในเครื่องเครื่องคอมพิวเตอร์ (ห้ามอัปโหลดขึ้น GitHub)
+│   ├── config.toml         # ค่าตั้งค่าทั่วไปของหน้าเว็บ Streamlit (theme, layout ฯลฯ)
+│   └── secrets.toml        # ที่สำหรับเก็บ API Key ในเครื่องคอมพิวเตอร์ (ห้ามอัปโหลดขึ้น GitHub)
 ├── .gitignore              # ระบุไฟล์/โฟลเดอร์ที่ Git จะละเว้นเพื่อความปลอดภัย
 ├── README.md               # เอกสารแนะนำและคู่มือโปรเจกต์ฉบับนี้
 ├── app.py                  # ไฟล์แอปพลิเคชันหลัก จัดการระบบ Web UI ทั้งหมด
 ├── ocr_engine.py           # โมดูลจัดการเตรียมภาพ (OpenCV) และเรียกใช้ Typhoon OCR API
-└── llm_engine.py           # โมดูลล้างคำผิด (Rule-based) และเรียกใช้ Typhoon LLM API เพื่อจัดโครงสร้างข้อมูล
+├── llm_engine.py           # โมดูลล้างคำผิด (Rule-based) และเรียกใช้ Typhoon LLM API เพื่อจัดโครงสร้างข้อมูล
+└── requirements.txt        # รายชื่อ Python package ที่โปรเจกต์ต้องใช้
+```
