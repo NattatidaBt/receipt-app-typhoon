@@ -78,23 +78,23 @@ def normalize_doc_type(value):
 CSS_STYLES = """
 <style>
 :root {
-    --bg: #eaf6fb;
-    --panel: #ffffff;
-    --panel-2: #eaf6fb;
-    --ink: #1f2937;
-    --muted: #5b6b73;
-    --line: #d7e6ea;
-    --accent: #00A8CC;
-    --accent-2: #008fae;
-    --ok-bg: #e8f2e7;
-    --ok-line: #9abe98;
-    --ok-ink: #2c6330;
-    --warn-bg: #fff3d8;
-    --warn-line: #dfb65b;
-    --warn-ink: #75520f;
-    --bad-bg: #fae4e0;
-    --bad-line: #d9958d;
-    --bad-ink: #91382d;
+    --bg: #FAFAF9;
+    --panel: #FFFFFF;
+    --panel-2: #F5F5F4;
+    --ink: #292524;
+    --muted: #78716C;
+    --line: #E7E5E4;
+    --accent: #C2410C;
+    --accent-2: #D97706;
+    --ok-bg: #EAF4EA;
+    --ok-line: #A8D5AA;
+    --ok-ink: #2F6B3A;
+    --warn-bg: #FEF3E2;
+    --warn-line: #E8B963;
+    --warn-ink: #92600E;
+    --bad-bg: #FCE9E5;
+    --bad-line: #E4A79B;
+    --bad-ink: #9C3B2E;
 }
 
 header, footer, #MainMenu,
@@ -190,17 +190,17 @@ h1, h2, h3, h4, p, label, span, div {
     z-index: 20;
     margin: 0 -22px 32px -22px;
     padding: 18px 28px 16px;
-    background: rgba(234, 246, 251, 0.94);
+    background: rgba(250, 250, 249, 0.94);
     backdrop-filter: blur(6px);
     border-bottom: 1px solid var(--line);
 }
 
 .pane {
     background: var(--panel);
-    border: none;
+    border: 1px solid var(--line);
     border-radius: 10px;
     margin-top: 0px !important;
-    box-shadow: 0 3px 14px rgba(15, 92, 112, 0.14);
+    box-shadow: 0 3px 14px rgba(41, 37, 36, 0.06);
 }
 
 .pane-head {
@@ -217,7 +217,7 @@ h1, h2, h3, h4, p, label, span, div {
 }
 
 .pane-note {
-    color: rgba(255, 255, 255, 0.86);
+    color: rgba(255, 255, 255, 0.88);
     font-size: 0.92rem;
     line-height: 1.5;
     margin-top: 10px;
@@ -251,12 +251,13 @@ h1, h2, h3, h4, p, label, span, div {
     overflow: auto;
     padding: 14px;
     background:
-        linear-gradient(45deg, #dbeff5 25%, transparent 25%),
-        linear-gradient(-45deg, #dbeff5 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #dbeff5 75%),
-        linear-gradient(-45deg, transparent 75%, #dbeff5 75%);
+        linear-gradient(45deg, #EFEBE4 25%, transparent 25%),
+        linear-gradient(-45deg, #EFEBE4 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #EFEBE4 75%),
+        linear-gradient(-45deg, transparent 75%, #EFEBE4 75%);
     background-size: 18px 18px;
     background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+    background-color: var(--bg);
     border: 1px solid var(--line);
     border-radius: 0 0 8px 8px;
     margin-top: 0px !important;
@@ -267,9 +268,9 @@ h1, h2, h3, h4, p, label, span, div {
     display: block;
     height: auto;
     margin: 0 auto;
-    border: 1px solid #bfe0ea;
+    border: 1px solid var(--line);
     background: #fff;
-    box-shadow: 0 10px 28px rgba(31, 41, 55, 0.12);
+    box-shadow: 0 10px 28px rgba(41, 37, 36, 0.18);
 }
 
 .ocr-expander-spacer {
@@ -329,21 +330,21 @@ h1, h2, h3, h4, p, label, span, div {
 }
 
 .badge-ok {
-    color: #1a4d1e;
-    background: #d6efd8;
-    border: 1px solid #8fc492;
+    color: var(--ok-ink);
+    background: var(--ok-bg);
+    border: 1px solid var(--ok-line);
 }
 
 .badge-warn {
-    color: #5c3d08;
-    background: #fdefc8;
-    border: 1px solid #d9a93a;
+    color: var(--warn-ink);
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-line);
 }
 
 .badge-bad {
-    color: #6b1f1a;
-    background: #fce4e0;
-    border: 1px solid #d9958d;
+    color: var(--bad-ink);
+    background: var(--bad-bg);
+    border: 1px solid var(--bad-line);
 }
 
 .upload-wrap {
@@ -388,7 +389,7 @@ h1, h2, h3, h4, p, label, span, div {
 
 [data-testid="stFileUploaderDropzone"] {
     background: var(--panel) !important;
-    border: 2px dashed #8fc7d9 !important;
+    border: 2px dashed #E2B98A !important;
     border-radius: 8px !important;
     min-height: 168px !important;
     padding: 26px 30px !important;
@@ -408,7 +409,7 @@ h1, h2, h3, h4, p, label, span, div {
 
 [data-testid="stFileUploaderDropzone"]:hover {
     border-color: var(--accent) !important;
-    background: #f5fcfe !important;
+    background: #FFF7ED !important;
 }
 
 [data-testid="stFileUploaderDropzoneInstructions"] {
@@ -433,10 +434,10 @@ h1, h2, h3, h4, p, label, span, div {
 [data-testid="stFileUploaderDropzone"] button,
 [data-testid="stFileUploader"] button,
 [data-testid="stFileUploader"] section button {
-    background-color: #ffffff !important;
-    background: #ffffff !important;
-    color: #1f2937 !important;
-    border: 1px solid #a9d4e0 !important;
+    background-color: #FFFFFF !important;
+    background: #FFFFFF !important;
+    color: var(--ink) !important;
+    border: 1px solid var(--line) !important;
     border-radius: 8px !important;
     box-shadow: none !important;
     min-height: 40px !important;
@@ -450,8 +451,8 @@ h1, h2, h3, h4, p, label, span, div {
 [data-testid="stFileUploaderDropzone"] button:hover,
 [data-testid="stFileUploader"] button:hover,
 [data-testid="stFileUploader"] section button:hover {
-    background-color: #eaf8fb !important;
-    background: #eaf8fb !important;
+    background-color: #FFF7ED !important;
+    background: #FFF7ED !important;
     border-color: var(--accent) !important;
     color: var(--accent-2) !important;
 }
@@ -471,9 +472,9 @@ h1, h2, h3, h4, p, label, span, div {
 [data-testid="stFileUploaderDeleteBtn"] button,
 [data-testid="stFileUploaderDeleteBtn"],
 [data-testid="stFileUploaderFile"] button {
-    background: #ffffff !important;
+    background: #FFFFFF !important;
     color: var(--ink) !important;
-    border: 1px solid #a9d4e0 !important;
+    border: 1px solid var(--line) !important;
     border-radius: 8px !important;
 }
 /* ─────────────────────────────────────────────────── */
@@ -481,9 +482,9 @@ h1, h2, h3, h4, p, label, span, div {
 .soft-callout {
     padding: 12px 14px;
     border-radius: 8px;
-    background: #eaf8fb;
-    border: 1px solid #b9e2ec;
-    color: #0f5c70;
+    background: #FFF7ED;
+    border: 1px solid #F3D4AC;
+    color: #9A5B12;
     font-size: 0.97rem;
     line-height: 1.55;
     margin: 10px 0 14px;
@@ -494,8 +495,8 @@ h1, h2, h3, h4, p, label, span, div {
     margin-bottom: 10px;
     padding: 9px 12px;
     border-left: 5px solid var(--accent);
-    background: #cdeaf5;
-    color: var(--accent-2);
+    background: #FFF7ED;
+    color: var(--accent);
     font-size: 1.02rem;
     font-weight: 780;
 }
@@ -511,7 +512,7 @@ h1, h2, h3, h4, p, label, span, div {
     padding: 12px;
     border: 1px solid var(--line);
     border-radius: 8px;
-    background: #ffffff;
+    background: var(--panel);
 }
 
 .metric-label {
@@ -564,8 +565,8 @@ h1, h2, h3, h4, p, label, span, div {
     font-size: 1.02rem !important;
     line-height: 1.55 !important;
     color: var(--ink) !important;
-    background: #ffffff !important;
-    border-color: #bfe0ea !important;
+    background: #FFFFFF !important;
+    border-color: var(--line) !important;
     border-radius: 8px !important;
 }
 
@@ -588,7 +589,7 @@ h1, h2, h3, h4, p, label, span, div {
 .stTextArea textarea:focus,
 .stNumberInput input:focus {
     border-color: var(--accent) !important;
-    box-shadow: 0 0 0 3px rgba(0, 168, 204, 0.18) !important;
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.25) !important;
 }
 
 div.stButton > button,
@@ -598,8 +599,8 @@ div.stFormSubmitButton > button {
     border-radius: 8px !important;
     font-size: 1rem !important;
     font-weight: 720 !important;
-    border: 1px solid #a9d4e0 !important;
-    background: #ffffff !important;
+    border: 1px solid var(--line) !important;
+    background: #FFFFFF !important;
     color: var(--ink) !important;
 }
 
@@ -607,8 +608,8 @@ div.stButton > button:hover,
 div.stDownloadButton > button:hover,
 div.stFormSubmitButton > button:hover {
     border-color: var(--accent) !important;
-    color: var(--accent-2) !important;
-    background: #eaf8fb !important;
+    color: var(--accent) !important;
+    background: #FFF7ED !important;
 }
 
 div.stButton > button[kind="primary"],
@@ -634,8 +635,8 @@ div[data-testid="stPageLink"] > a {
     border-radius: 8px !important;
     font-size: 1rem !important;
     font-weight: 720 !important;
-    border: 1px solid #a9d4e0 !important;
-    background: #ffffff !important;
+    border: 1px solid var(--line) !important;
+    background: #FFFFFF !important;
     color: var(--ink) !important;
     text-decoration: none !important;
     padding: 0 16px !important;
@@ -647,24 +648,24 @@ div[data-testid="stPageLink"] > a {
 div.stPageLink > a:hover,
 div[data-testid="stPageLink"] > a:hover {
     border-color: var(--accent) !important;
-    color: var(--accent-2) !important;
-    background: #eaf8fb !important;
+    color: var(--accent) !important;
+    background: #FFF7ED !important;
     text-decoration: none !important;
 }
 
 .stNumberInput button,
 .stNumberInput [data-testid="stNumberInputStepDown"],
 .stNumberInput [data-testid="stNumberInputStepUp"] {
-    background: #ffffff !important;
+    background: #FFFFFF !important;
     color: var(--ink) !important;
-    border: 1px solid #a9d4e0 !important;
+    border: 1px solid var(--line) !important;
 }
 
 .stNumberInput button:hover,
 .stNumberInput [data-testid="stNumberInputStepDown"]:hover,
 .stNumberInput [data-testid="stNumberInputStepUp"]:hover {
-    background: #eaf8fb !important;
-    color: var(--accent-2) !important;
+    background: #FFF7ED !important;
+    color: var(--accent) !important;
     border-color: var(--accent) !important;
 }
 
@@ -679,7 +680,7 @@ div[data-testid="stPageLink"] > a:hover {
     border: 1px solid var(--line);
     border-radius: 8px;
     overflow: hidden;
-    background: #ffffff !important;
+    background: #FFFFFF !important;
     color: var(--ink) !important;
 }
 
@@ -693,9 +694,9 @@ div[data-testid="stPageLink"] > a:hover {
 }
 
 [data-testid="stDataFrame"] button {
-    background: #ffffff !important;
+    background: #FFFFFF !important;
     color: var(--ink) !important;
-    border-color: #a9d4e0 !important;
+    border-color: var(--line) !important;
 }
 
 [data-testid="stAlert"] *,
@@ -709,15 +710,15 @@ div[data-testid="stPageLink"] > a:hover {
     background: rgba(255, 255, 255, 0.96);
     border: 1px solid var(--line);
     border-radius: 8px;
-    box-shadow: 0 -8px 24px rgba(31, 41, 55, 0.08);
+    box-shadow: 0 -8px 24px rgba(41, 37, 36, 0.06);
 }
 
 .kbd {
     display: inline-block;
     padding: 1px 7px;
-    border: 1px solid #a9d4e0;
+    border: 1px solid var(--line);
     border-radius: 5px;
-    background: #ffffff;
+    background: var(--panel-2);
     color: var(--ink);
     font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
     font-size: 0.88rem;
@@ -733,7 +734,7 @@ div[data-testid="stPageLink"] > a:hover {
     position: fixed;
     inset: 0;
     z-index: 9999;
-    background: rgba(15, 40, 48, 0.48);
+    background: rgba(41, 37, 36, 0.45);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -745,7 +746,7 @@ div[data-testid="stPageLink"] > a:hover {
     border-radius: 12px;
     padding: 28px 32px 24px;
     width: min(520px, 92vw);
-    box-shadow: 0 24px 64px rgba(15, 40, 48, 0.22);
+    box-shadow: 0 24px 64px rgba(41, 37, 36, 0.25);
 }
 
 .fb-title {
@@ -774,7 +775,7 @@ div[data-testid="stPageLink"] > a:hover {
     padding: 6px 14px;
     border-radius: 999px;
     border: 1px solid var(--line);
-    background: #ffffff;
+    background: var(--panel-2);
     color: var(--ink);
     font-size: 0.94rem;
     cursor: pointer;
@@ -784,8 +785,8 @@ div[data-testid="stPageLink"] > a:hover {
 
 .fb-chip:hover {
     border-color: var(--accent);
-    background: #eaf8fb;
-    color: var(--accent-2);
+    background: #FFF7ED;
+    color: var(--accent);
 }
 
 .fb-chip.selected {
@@ -798,9 +799,9 @@ div[data-testid="stPageLink"] > a:hover {
     width: 100%;
     min-height: 84px;
     padding: 10px 12px;
-    border: 1px solid #bfe0ea;
+    border: 1px solid var(--line);
     border-radius: 8px;
-    background: #ffffff;
+    background: #FFFFFF;
     color: var(--ink);
     font-size: 1rem;
     line-height: 1.55;
@@ -813,7 +814,7 @@ div[data-testid="stPageLink"] > a:hover {
 .fb-textarea:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(0, 168, 204, 0.18) !important;
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.25) !important;
 }
 
 .fb-btn-row {
@@ -826,8 +827,8 @@ div[data-testid="stPageLink"] > a:hover {
     min-height: 40px;
     padding: 6px 20px;
     border-radius: 8px;
-    border: 1px solid #a9d4e0;
-    background: #ffffff;
+    border: 1px solid var(--line);
+    background: #FFFFFF;
     color: var(--ink);
     font-size: 0.98rem;
     font-weight: 720;
@@ -837,7 +838,7 @@ div[data-testid="stPageLink"] > a:hover {
 
 .fb-btn:hover {
     border-color: var(--accent);
-    background: #eaf8fb;
+    background: #FFF7ED;
 }
 
 .fb-btn.primary {
@@ -859,13 +860,13 @@ div[data-testid="stPageLink"] > a:hover {
 .fb-star {
     font-size: 1.6rem;
     cursor: pointer;
-    color: #bcdbe4;
+    color: var(--line);
     transition: color 0.12s;
     user-select: none;
 }
 
 .fb-star.lit {
-    color: #e8a820;
+    color: var(--accent-2);
 }
 
 @media (max-width: 980px) {
@@ -1029,9 +1030,9 @@ FEEDBACK_MODAL_HTML = """
     t.textContent = msg;
     t.style.cssText = `
       position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
-      background:#00A8CC;color:#fff;padding:10px 22px;border-radius:999px;
+      background:#C2410C;color:#fff;padding:10px 22px;border-radius:999px;
       font-size:0.98rem;font-weight:650;z-index:99999;
-      box-shadow:0 8px 24px rgba(15,40,48,0.22);
+      box-shadow:0 8px 24px rgba(41,37,36,0.35);
       animation:fadeUp 0.25s ease;
     `;
     document.body.appendChild(t);
@@ -1289,13 +1290,13 @@ def build_receipt_excel(payload):
     from datetime import datetime
     from io import BytesIO
 
-    ACCENT = "00A8CC"
-    ACCENT_LIGHT = "EAF6FB"
-    WARN = "FFF3D8"
-    OK = "E8F2E7"
+    ACCENT = "C2410C"
+    ACCENT_LIGHT = "FDF1E6"
+    WARN = "FEF3E2"
+    OK = "EAF4EA"
     WHITE = "FFFFFF"
-    INK = "1F2937"
-    MUTED = "5B6B73"
+    INK = "292524"
+    MUTED = "78716C"
 
     def header_style(cell, bg=ACCENT, fg="FFFFFF", bold=True):
         cell.font = Font(bold=bold, color=fg, size=10)
@@ -1362,7 +1363,7 @@ def build_receipt_excel(payload):
     items = payload.get("line_items", []) or []
     for i, item in enumerate(items, start=1):
         row = ITEM_HEADER_ROW + i
-        bg = WHITE if i % 2 == 1 else "EAF6FB"
+        bg = WHITE if i % 2 == 1 else "F8FAFC"
         values = [
             i, item.get("item_name", "-"), safe_float(item.get("quantity"), 1.0), "หน่วย",
             safe_float(item.get("unit_price")), safe_float(item.get("total_price")),
@@ -1390,8 +1391,8 @@ def build_receipt_excel(payload):
         ("ยอดรวมสินค้า (Total Before Discount)", _total_before_discount_xl, OK),
     ]
     if _discount_val_xl > 0:
-        summary.append(("ส่วนลดรวม (Discount)", -_discount_val_xl, "FFF3D8"))
-        summary.append(("ยอดที่จ่ายจริง (Net Amount)", _net_amount_xl, "D6EFD8"))
+        summary.append(("ส่วนลดรวม (Discount)", -_discount_val_xl, "FEF3E2"))
+        summary.append(("ยอดที่จ่ายจริง (Net Amount)", _net_amount_xl, "EAF4EA"))
     for offset, (label, value, bg) in enumerate(summary):
         r = sum_row + offset
         ws1.merge_cells(f"A{r}:E{r}")
@@ -1467,9 +1468,9 @@ def copy_button(label, text, key):
             width: 100%;
             height: 44px;
             border-radius: 8px;
-            border: 1px solid #a9d4e0;
-            background: #ffffff;
-            color: #1f2937;
+            border: 1px solid #E7E5E4;
+            background: #FFFFFF;
+            color: #292524;
             font-size: 16px;
             font-weight: 720;
             cursor: pointer;
@@ -1480,9 +1481,9 @@ def copy_button(label, text, key):
             transition: background 0.15s, border-color 0.15s, color 0.15s;
         }}
         #copy-{key}:hover {{
-            border-color: #00A8CC;
-            color: #008fae;
-            background: #eaf8fb;
+            border-color: #C2410C;
+            color: #C2410C;
+            background: #FFF7ED;
         }}
         </style>
         <button id="copy-{key}">{label}</button>
@@ -1714,7 +1715,7 @@ with right:
           </div>
           <div class="metric">
             <div class="metric-label">{"ยอดจ่ายจริง (หลังหักส่วนลด)" if _has_discount else "ยอดรวมสินค้า"}</div>
-            <div class="metric-value" style="{"color:#c0392b" if _has_discount else ""}">{_net_amount_val:,.2f}</div>
+            <div class="metric-value" style="{"color:#B3402C" if _has_discount else ""}">{_net_amount_val:,.2f}</div>
           </div>
         </div>
         """,
