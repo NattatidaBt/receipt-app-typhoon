@@ -9,12 +9,12 @@ import streamlit as st
 # ⚙️ CONFIG (ค่าที่ดีที่สุดจากผลทดลอง)
 # ==================================================
 MODEL_NAME = "typhoon-v2.5-30b-a3b-instruct"
-EXTRACT_TEMPERATURE = 0.0     # Mode1_Standard_SFT @ Temp 0.0 = ผลดีที่สุด
-VERIFY_TEMPERATURE = 0.0
+EXTRACT_TEMPERATURE = 0.3     # Mode2_Verified_Extraction @ Temp 0.3 = ผลดีที่สุด (อัปเดตจากผลทดลองล่าสุด)
+VERIFY_TEMPERATURE = 0.0      # รอบตรวจสอบซ้ำยังคงใช้ Temp 0.0 เพื่อความนิ่ง/สม่ำเสมอของการแก้ไข
 LLM_MAX_TOKENS = 2048
 MAX_EXTRACTION_ATTEMPTS = 3
 
-USE_SELF_VERIFICATION = True   # เปิดรอบตรวจสอบซ้ำ (สำคัญมากสำหรับฟิลด์ตัวเลข)
+USE_SELF_VERIFICATION = True   # เปิดรอบตรวจสอบซ้ำแบบมีเงื่อนไข (Conditional ตาม needs_verification) — สำคัญมากสำหรับฟิลด์ตัวเลข
 
 # ==================================================
 # 📋 GOLDEN SCHEMA — ต้องตรงกับ schema ที่ใช้วัดผล (มี vat_amount ไม่ใช่ total_before_discount)
@@ -202,7 +202,8 @@ EXTRA_RULES = (
 )
 
 # ==================================================
-# 🥇 SYSTEM PROMPT — Mode1_Standard_SFT (config ที่ให้ผลดีที่สุด, F1 = 0.9358)
+# 🥇 SYSTEM PROMPT — Mode2_Verified_Extraction (config ที่ให้ผลดีที่สุดจากผลทดลองล่าสุด)
+# ใช้ร่วมกับ EXTRACT_TEMPERATURE = 0.3 และ self-verification รอบสอง (แบบมีเงื่อนไข)
 # ==================================================
 EXTRACT_SYS_PROMPT = (
     f"คุณคือ AI Expert ด้านการดึงข้อมูลใบเสร็จรับเงิน (Invoice/Receipt)\n"
@@ -475,8 +476,9 @@ def call_typhoon_llm(ocr_text: str) -> dict:
     (ดู ocr_pipeline.py — สองขั้นตอนนั้นต้องทำ "ก่อน" เรียกฟังก์ชันนี้เสมอ เพื่อให้ตรงกับลำดับ
     ที่ใช้วัดผลจริงใน LLMJasonJune.py: clean_ocr_text -> format_ocr_text -> rule_based_correct)
     -> คืนค่า JSON ตาม GOLDEN_SCHEMA
-    ใช้ config ที่ผลทดลองยืนยันว่าดีที่สุด: Mode1_Standard_SFT @ Temp 0.0
-    บวก self-verification รอบสองเฉพาะกรณีที่ตรวจพบความไม่สอดคล้องของตัวเลข/รูปแบบ
+    ใช้ config ที่ผลทดลองยืนยันว่าดีที่สุด: Mode2_Verified_Extraction @ Temp 0.3 (extraction)
+    บวก self-verification รอบสอง @ Temp 0.0 เฉพาะกรณีที่ตรวจพบความไม่สอดคล้องของตัวเลข/รูปแบบ
+    (needs_verification เป็นตัวตัดสินใจแบบมีเงื่อนไข ไม่ได้เรียกซ้ำทุกครั้งเสมอ)
     """
     final_ocr_input = rule_based_correct(ocr_text)
 
